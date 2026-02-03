@@ -1,14 +1,12 @@
 // Gemini API 클라이언트
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 import type { TeamMember, Message, Role, Level } from '@/types';
 
 // Gemini 클라이언트 초기화
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
 
-// 모델 가져오기
-export function getGeminiModel() {
-  return genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-}
+// 모델 ID
+const MODEL_ID = 'gemini-3-pro-preview';
 
 // 역할별 시스템 프롬프트 생성
 export function generateSystemPrompt(member: TeamMember): string {
@@ -86,8 +84,6 @@ export async function generateMemberResponse(
   conversationHistory: Message[],
   topic?: string
 ): Promise<string> {
-  const model = getGeminiModel();
-
   const systemPrompt = generateSystemPrompt(member);
 
   // 대화 히스토리 포맷팅
@@ -108,9 +104,11 @@ ${topic ? `[현재 주제]\n${topic}\n` : ''}
 위 맥락을 바탕으로 ${member.name}(${member.level === 'junior' ? '주니어' : '시니어'} ${member.role})로서 의견을 제시해주세요.`;
 
   try {
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    return response.text();
+    const response = await genAI.models.generateContent({
+      model: MODEL_ID,
+      contents: prompt,
+    });
+    return response.text || '';
   } catch (error) {
     console.error('Gemini API 오류:', error);
     throw error;

@@ -1,18 +1,18 @@
 // AI Provider 추상화 모듈
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 import OpenAI from 'openai';
 import type { AIModel } from '@/types';
 
 // 싱글톤 클라이언트
-let geminiClient: GoogleGenerativeAI | null = null;
+let geminiClient: GoogleGenAI | null = null;
 let openaiClient: OpenAI | null = null;
 
-function getGeminiClient(): GoogleGenerativeAI {
+function getGeminiClient(): GoogleGenAI {
   if (!geminiClient) {
     if (!process.env.GEMINI_API_KEY) {
       throw new Error('GEMINI_API_KEY가 설정되지 않았습니다.');
     }
-    geminiClient = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    geminiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   }
   return geminiClient;
 }
@@ -31,9 +31,9 @@ function getOpenAIClient(): OpenAI {
 
 // 모델별 설정
 const MODEL_CONFIG: Record<AIModel, { provider: 'gemini' | 'openai'; modelId: string }> = {
-  gemini: { provider: 'gemini', modelId: 'gemini-2.0-flash' },
+  gemini: { provider: 'gemini', modelId: 'gemini-3-pro-preview' },
   gpt: { provider: 'openai', modelId: 'gpt-5.2' },
-  claude: { provider: 'openai', modelId: 'gpt-4o' }, // Claude는 추후 Anthropic API로 교체 가능
+  claude: { provider: 'openai', modelId: 'gpt-5.2' }, // Claude는 추후 Anthropic API로 교체 예정
 };
 
 // 통합 API 호출
@@ -46,12 +46,12 @@ export async function generateText(
 
   if (config.provider === 'gemini') {
     const client = getGeminiClient();
-    const geminiModel = client.getGenerativeModel({ model: config.modelId });
-
-    const prompt = `${systemPrompt}\n\n---\n\n${userPrompt}`;
-    const result = await geminiModel.generateContent(prompt);
-    const response = await result.response;
-    return response.text();
+    const contents = `${systemPrompt}\n\n---\n\n${userPrompt}`;
+    const response = await client.models.generateContent({
+      model: config.modelId,
+      contents,
+    });
+    return response.text || '';
   }
 
   if (config.provider === 'openai') {
@@ -90,11 +90,11 @@ export async function generateLongText(
 
   if (config.provider === 'gemini') {
     const client = getGeminiClient();
-    const geminiModel = client.getGenerativeModel({ model: config.modelId });
-
-    const result = await geminiModel.generateContent(prompt);
-    const response = await result.response;
-    return response.text();
+    const response = await client.models.generateContent({
+      model: config.modelId,
+      contents: prompt,
+    });
+    return response.text || '';
   }
 
   if (config.provider === 'openai') {
@@ -129,7 +129,7 @@ export function getAvailableModels(): AIModel[] {
   }
   if (process.env.OPENAI_API_KEY) {
     available.push('gpt');
-    available.push('claude'); // GPT-4o로 대체
+    available.push('claude'); // GPT-5.2로 대체
   }
 
   return available;
