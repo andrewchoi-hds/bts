@@ -214,14 +214,104 @@ ${behavior.approach}
 - 다른 역할이 놓칠 수 있는 당신만의 관점을 반드시 포함하세요`;
 }
 
-// 대화 히스토리 포맷팅
+// [[키포인트]] 추출
+function extractKeyPoints(messages: Message[]): string[] {
+  const keyPoints: string[] = [];
+  const regex = /\[\[(.*?)\]\]/g;
+
+  for (const msg of messages) {
+    let match;
+    while ((match = regex.exec(msg.content)) !== null) {
+      const point = match[1].trim();
+      if (!keyPoints.includes(point)) {
+        keyPoints.push(point);
+      }
+    }
+  }
+
+  return keyPoints;
+}
+
+// 메시지를 청크로 그룹화 (라운드 단위 대신 N개씩)
+function groupMessagesIntoChunks(messages: Message[], chunkSize: number = 6): { index: number; messages: Message[] }[] {
+  const chunks: { index: number; messages: Message[] }[] = [];
+
+  for (let i = 0; i < messages.length; i += chunkSize) {
+    chunks.push({
+      index: Math.floor(i / chunkSize) + 1,
+      messages: messages.slice(i, i + chunkSize)
+    });
+  }
+
+  return chunks;
+}
+
+// 청크 요약 생성
+function summarizeChunk(chunkIndex: number, messages: Message[]): string {
+  const participants = [...new Set(messages.map(m => m.memberName))];
+  const keyPoints = extractKeyPoints(messages);
+
+  // 주요 의견 추출 (각 참여자의 첫 문장)
+  const opinions = messages
+    .slice(0, 4)
+    .map(m => {
+      const firstSentence = m.content.split(/[.!?]/)[0];
+      return `- ${m.memberName}(${m.memberRole}): ${firstSentence}`;
+    });
+
+  let summary = `**[토론 ${chunkIndex}]**\n`;
+  summary += `참여자: ${participants.join(', ')}\n`;
+
+  if (keyPoints.length > 0) {
+    summary += `핵심 포인트: ${keyPoints.join(', ')}\n`;
+  }
+
+  if (opinions.length > 0) {
+    summary += `주요 의견:\n${opinions.join('\n')}`;
+  }
+
+  return summary;
+}
+
+// 대화 히스토리 포맷팅 (하이브리드 방식)
 function formatConversationHistory(messages: Message[]): string {
   if (messages.length === 0) return '(아직 대화가 없습니다)';
 
-  return messages
-    .slice(-10) // 최근 10개 메시지만
-    .map(msg => `[${msg.memberName}]: ${msg.content}`)
-    .join('\n\n');
+  const RECENT_COUNT = 5; // 최근 메시지 전문 개수
+  const CHUNK_SIZE = 6;   // 요약할 메시지 청크 크기
+
+  // 1. 전체 키포인트 추출
+  const allKeyPoints = extractKeyPoints(messages);
+
+  // 2. 결과 조합
+  const parts: string[] = [];
+
+  // 2-1. 누적 핵심 포인트 (전체 대화에서 추출)
+  if (allKeyPoints.length > 0) {
+    parts.push(`## 누적 핵심 포인트\n${allKeyPoints.map((p, i) => `${i + 1}. ${p}`).join('\n')}`);
+  }
+
+  // 2-2. 이전 메시지 요약 (최근 N개 제외한 나머지)
+  if (messages.length > RECENT_COUNT) {
+    const olderMessages = messages.slice(0, -RECENT_COUNT);
+    const chunks = groupMessagesIntoChunks(olderMessages, CHUNK_SIZE);
+
+    if (chunks.length > 0) {
+      const summaries = chunks.map(c => summarizeChunk(c.index, c.messages));
+      parts.push(`## 이전 토론 요약\n${summaries.join('\n\n')}`);
+    }
+  }
+
+  // 2-3. 최근 메시지 전문
+  const recentMessages = messages.slice(-RECENT_COUNT);
+  if (recentMessages.length > 0) {
+    const recentText = recentMessages
+      .map(msg => `[${msg.memberName}(${msg.memberRole})]: ${msg.content}`)
+      .join('\n\n');
+    parts.push(`## 최근 대화\n${recentText}`);
+  }
+
+  return parts.join('\n\n---\n\n');
 }
 
 export async function POST(request: NextRequest) {
