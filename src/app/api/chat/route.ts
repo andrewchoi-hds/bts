@@ -317,37 +317,60 @@ function formatConversationHistory(messages: Message[]): string {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { member, goal, messages, topic } = body as {
+    const { member, goal, messages, topic, useBCL = false } = body as {
       member: TeamMember;
       goal: string;
       messages: Message[];
       topic?: string;
+      useBCL?: boolean; // BCL(압축 언어) 모드 사용 여부
     };
 
     // 팀원에게 지정된 모델 사용 (기본: gemini)
     const model: AIModel = member.model || 'gemini';
 
-    const systemPrompt = generateSystemPrompt(member, goal);
-    const historyText = formatConversationHistory(messages);
+    let systemPrompt: string;
+    let userPrompt: string;
+    let bclStats: { originalTokens: number; compressedTokens: number; savings: number } | null = null;
 
-    const modeInstructions: Record<string, string> = {
-      '브레인스토밍': `자유롭게 아이디어를 제시하세요. 실현 가능성보다 창의성과 가능성에 집중합니다.
+    if (useBCL) {
+      // ========================================
+      // BCL 모드: AI 전용 압축 언어 사용
+      // ========================================
+      const { generateCompressedPrompt, compressContext } = await import('@/lib/ai-language');
+
+      const compressed = compressContext(goal, messages);
+      bclStats = compressed.stats;
+
+      const prompts = generateCompressedPrompt(member, goal, messages, topic);
+      systemPrompt = prompts.systemPrompt;
+      userPrompt = prompts.userPrompt;
+
+      console.log(`[BCL] 토큰 절약: ${bclStats.savings}% (${bclStats.originalTokens} → ${bclStats.compressedTokens})`);
+    } else {
+      // ========================================
+      // 기존 모드: 한국어 전체 컨텍스트
+      // ========================================
+      systemPrompt = generateSystemPrompt(member, goal);
+      const historyText = formatConversationHistory(messages);
+
+      const modeInstructions: Record<string, string> = {
+        '브레인스토밍': `자유롭게 아이디어를 제시하세요. 실현 가능성보다 창의성과 가능성에 집중합니다.
 다른 사람 아이디어에서 영감을 받아 발전시키거나, 완전히 새로운 방향을 제안해도 좋습니다.`,
-      '토론': `이전 의견들을 분석하고, 당신의 전문 관점에서 찬성/반대/보완 의견을 제시하세요.
+        '토론': `이전 의견들을 분석하고, 당신의 전문 관점에서 찬성/반대/보완 의견을 제시하세요.
 구체적인 근거와 함께 논리적으로 주장을 펼치되, 다른 관점도 존중하세요.`,
-      '리뷰': `지금까지 논의된 내용을 종합적으로 검토하세요.
+        '리뷰': `지금까지 논의된 내용을 종합적으로 검토하세요.
 놓친 부분, 리스크, 개선점을 당신의 전문 영역 관점에서 날카롭게 지적해주세요.`,
-      '실행': `구체적인 실행 계획과 다음 단계를 제안하세요.
+        '실행': `구체적인 실행 계획과 다음 단계를 제안하세요.
 우선순위, 담당자, 타임라인, 필요 리소스 등을 고려해주세요.`
-    };
+      };
 
-    const currentMode = topic?.includes('브레인스토밍') ? '브레인스토밍'
-      : topic?.includes('토론') ? '토론'
-      : topic?.includes('리뷰') ? '리뷰'
-      : topic?.includes('실행') ? '실행'
-      : '브레인스토밍';
+      const currentMode = topic?.includes('브레인스토밍') ? '브레인스토밍'
+        : topic?.includes('토론') ? '토론'
+        : topic?.includes('리뷰') ? '리뷰'
+        : topic?.includes('실행') ? '실행'
+        : '브레인스토밍';
 
-    const userPrompt = `# 프로젝트 컨텍스트
+      userPrompt = `# 프로젝트 컨텍스트
 **목표**: ${goal}
 
 # 이전 토론 내용
@@ -365,10 +388,14 @@ ${topic ? `**논의 주제**: ${topic}` : ''}
 - 이전 대화에서 이미 언급된 내용을 단순 반복하지 마세요
 - 당신의 역할에서만 볼 수 있는 고유한 인사이트를 추가하세요
 - 구체적인 제안이나 우려사항을 명확히 표현하세요`;
+    }
 
     const text = await generateText(model, systemPrompt, userPrompt);
 
-    return NextResponse.json({ content: text });
+    return NextResponse.json({
+      content: text,
+      ...(bclStats && { bclStats }), // BCL 모드일 때 통계 포함
+    });
   } catch (error) {
     console.error('AI API 오류:', error);
     return NextResponse.json(
