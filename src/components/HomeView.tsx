@@ -4,18 +4,42 @@ import { useMemo } from 'react';
 import GoalInput from './GoalInput';
 import StatsCard from './dashboard/StatsCard';
 import RoleChart from './dashboard/RoleChart';
-import { useTeamStore } from '@/store/teamStore';
-import type { AIModel } from '@/types';
+import type { AIModel, SessionHistory, Role } from '@/types';
 
 interface HomeViewProps {
   onStartCollaboration: (goal: string, model: AIModel) => void;
+  history: SessionHistory[];
 }
 
-export default function HomeView({ onStartCollaboration }: HomeViewProps) {
-  const { history, getSessionStats, getRoleAnalysis } = useTeamStore();
+export default function HomeView({ onStartCollaboration, history }: HomeViewProps) {
+  // 통계 계산
+  const stats = useMemo(() => {
+    const totalSessions = history.length;
+    const totalMessages = history.reduce((sum, s) => sum + (s.messages?.length ?? 0), 0);
+    const totalDocuments = history.reduce((sum, s) => sum + (s.documentVersions?.length ?? 0), 0);
+    const avgTeamSize = totalSessions > 0
+      ? Math.round(history.reduce((sum, s) => sum + (s.members?.length ?? 0), 0) / totalSessions * 10) / 10
+      : 0;
+    return { totalSessions, totalMessages, totalDocuments, avgTeamSize };
+  }, [history]);
 
-  const stats = useMemo(() => getSessionStats(), [history]);
-  const roleStats = useMemo(() => getRoleAnalysis(), [history]);
+  // 역할 분석
+  const roleStats = useMemo(() => {
+    const roleCounts: Record<Role, number> = {
+      planner: 0, designer: 0, developer: 0, qa: 0,
+      marketer: 0, analyst: 0, security: 0, user: 0,
+    };
+    history.forEach(session => {
+      session.members?.forEach(member => {
+        if (member.role && roleCounts[member.role] !== undefined) {
+          roleCounts[member.role]++;
+        }
+      });
+    });
+    return Object.entries(roleCounts)
+      .map(([role, count]) => ({ role: role as Role, count }))
+      .filter(item => item.count > 0);
+  }, [history]);
 
   const hasHistory = history.length > 0;
 

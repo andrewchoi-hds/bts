@@ -245,7 +245,7 @@ export default function Home() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-full overflow-hidden">
         {activeNav === 'home' && (
-          <HomeView onStartCollaboration={handleStartCollaboration} />
+          <HomeView onStartCollaboration={handleStartCollaboration} history={history} />
         )}
 
         {activeNav === 'history' && (

@@ -163,7 +163,7 @@ export interface DocumentVersion {
   createdAt: string;
 }
 
-// 세션 히스토리 (localStorage 저장용)
+// 세션 히스토리 (DB 저장용)
 export interface SessionHistory {
   id: string;
   goal: string;
