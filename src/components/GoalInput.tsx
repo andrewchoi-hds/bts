@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import type { AIModel } from '@/types';
+import { ROLES, type AIModel } from '@/types';
 
 interface GoalInputProps {
   onSubmit: (goal: string, model: AIModel) => void;
@@ -233,9 +233,9 @@ export default function GoalInput({ onSubmit }: GoalInputProps) {
         {/* Features */}
         <div className="mt-16 grid grid-cols-3 gap-4 sm:gap-8">
           {[
-            { icon: '👥', value: '6', label: '역할' },
+            { icon: '👥', value: String(ROLES.length), label: '역할' },
             { icon: '🎯', value: '2', label: '레벨' },
-            { icon: '🤖', value: '3', label: 'AI 모델' },
+            { icon: '🤖', value: String(AI_MODELS.length), label: 'AI 모델' },
           ].map((stat, index) => (
             <div
               key={index}
