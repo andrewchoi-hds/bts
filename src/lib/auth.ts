@@ -37,6 +37,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             return null;
           }
 
+          // 비활성화된 사용자 차단
+          if (!user.isActive) {
+            throw new Error('비활성화된 계정입니다. 관리자에게 문의하세요.');
+          }
+
           const isValid = await bcrypt.compare(
             credentials.password as string,
             user.password
@@ -55,7 +60,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           };
         } catch (error) {
           console.error('Authorize error:', error);
-          return null;
+          throw error; // 에러 메시지를 전달
         }
       },
     }),

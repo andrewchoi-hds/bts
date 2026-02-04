@@ -9,8 +9,11 @@ interface User {
   name: string | null;
   email: string | null;
   role: string;
+  isActive: boolean;
+  memo: string | null;
   createdAt: string;
   sessionCount: number;
+  hasRecentActivity: boolean;
   usage: {
     promptTokens: number;
     completionTokens: number;
@@ -32,6 +35,7 @@ interface UsersResponse {
     totalUsers: number;
     activeUsers: number;
     inactiveUsers: number;
+    recentlyActive: number;
   };
 }
 
@@ -77,10 +81,47 @@ export default function AdminUsersPage() {
         throw new Error(data.error || '역할 변경에 실패했습니다.');
       }
 
-      // 성공 시 목록 새로고침
       fetchUsers();
     } catch (err) {
       alert(err instanceof Error ? err.message : '역할 변경 중 오류가 발생했습니다.');
+    }
+  };
+
+  const handleActiveChange = async (userId: string, isActive: boolean) => {
+    try {
+      const response = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, isActive }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || '상태 변경에 실패했습니다.');
+      }
+
+      fetchUsers();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '상태 변경 중 오류가 발생했습니다.');
+    }
+  };
+
+  const handleMemoChange = async (userId: string, memo: string) => {
+    try {
+      const response = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, memo }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || '비고 저장에 실패했습니다.');
+      }
+
+      fetchUsers();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '비고 저장 중 오류가 발생했습니다.');
     }
   };
 
@@ -91,12 +132,13 @@ export default function AdminUsersPage() {
         <div>
           <h1 className="text-2xl font-bold">사용자 관리</h1>
           <p className="text-sm text-[var(--text-muted)] mt-1">
-            사용자별 API 사용량을 확인하고 역할을 관리하세요
+            전체 사용자 목록을 확인하고 관리하세요
           </p>
         </div>
 
         {/* Period Selector */}
         <div className="flex items-center gap-2">
+          <span className="text-sm text-[var(--text-muted)]">사용량 기간:</span>
           {[7, 14, 30, 90].map((days) => (
             <button
               key={days}
@@ -118,18 +160,22 @@ export default function AdminUsersPage() {
 
       {/* Summary Cards */}
       {data?.summary && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
             <p className="text-2xl font-bold">{data.summary.totalUsers}</p>
-            <p className="text-sm text-[var(--text-muted)]">총 사용자</p>
+            <p className="text-sm text-[var(--text-muted)]">전체 사용자</p>
           </div>
-          <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
+          <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-green-500/20">
             <p className="text-2xl font-bold text-green-500">{data.summary.activeUsers}</p>
-            <p className="text-sm text-[var(--text-muted)]">활성 사용자 (기간 내 API 사용)</p>
+            <p className="text-sm text-[var(--text-muted)]">활성화된 사용자</p>
           </div>
-          <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
-            <p className="text-2xl font-bold text-[var(--text-muted)]">{data.summary.inactiveUsers}</p>
-            <p className="text-sm text-[var(--text-muted)]">비활성 사용자</p>
+          <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-red-500/20">
+            <p className="text-2xl font-bold text-red-400">{data.summary.inactiveUsers}</p>
+            <p className="text-sm text-[var(--text-muted)]">비활성화된 사용자</p>
+          </div>
+          <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-cyan-500/20">
+            <p className="text-2xl font-bold text-cyan-400">{data.summary.recentlyActive}</p>
+            <p className="text-sm text-[var(--text-muted)]">최근 {period}일 활동</p>
           </div>
         </div>
       )}
@@ -160,7 +206,12 @@ export default function AdminUsersPage() {
         </div>
       ) : data ? (
         <>
-          <UserTable users={data.users} onRoleChange={handleRoleChange} />
+          <UserTable
+            users={data.users}
+            onRoleChange={handleRoleChange}
+            onActiveChange={handleActiveChange}
+            onMemoChange={handleMemoChange}
+          />
 
           {/* Pagination */}
           {data.pagination.totalPages > 1 && (
@@ -173,7 +224,7 @@ export default function AdminUsersPage() {
                 이전
               </button>
               <span className="px-4 py-2 text-sm text-[var(--text-muted)]">
-                {page} / {data.pagination.totalPages}
+                {page} / {data.pagination.totalPages} (총 {data.pagination.total}명)
               </span>
               <button
                 onClick={() => setPage(p => Math.min(data.pagination.totalPages, p + 1))}

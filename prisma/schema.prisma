@@ -21,6 +21,8 @@ model User {
   password      String    // hashed password
   image         String?
   role          String    @default("user")  // 'user' | 'admin'
+  isActive      Boolean   @default(true)    // 활성화 상태
+  memo          String?   // 관리자 비고
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
