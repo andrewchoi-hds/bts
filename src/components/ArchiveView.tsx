@@ -69,19 +69,360 @@ export default function ArchiveView({
     if (!selectedVersion || !selectedSession) return;
 
     if (ide === 'claude') {
-      // Claude Code용 프롬프트 생성
+      // Claude Code용 프롬프트 생성 - agents, skills 포함
       const prompt = `# 프로젝트 생성 요청
 
-다음 PRD(기획서)를 바탕으로 프로젝트를 생성해주세요.
+다음 PRD(기획서)를 바탕으로 **완전한 프로젝트**를 생성해주세요.
 
-## PRD
+---
+
+## PRD (Product Requirements Document)
+
 ${selectedVersion.content}
 
-## 요구사항
-1. 기획서 기반 프로젝트 구조 생성
-2. CLAUDE.md 파일 생성 (프로젝트 컨텍스트)
-3. .claude/commands/ 에 슬래시 커맨드 정의 (/feature, /component, /api, /test, /review)
-4. 핵심 기능 스캐폴딩
+---
+
+## 생성 요구사항
+
+### 1. 프로젝트 구조
+- 기획서의 기술 스택 섹션을 참고하여 적절한 프레임워크 선택
+- 클린 아키텍처 원칙에 따른 폴더 구조
+- 필요한 패키지 설치 (package.json 또는 requirements.txt)
+
+### 2. 핵심 기능 구현
+- PRD의 MVP 기능 목록 기반으로 핵심 컴포넌트/모듈 구현
+- 기본적인 UI 레이아웃 (기획서의 UX/UI 방향성 참고)
+- API 엔드포인트 스캐폴딩 (필요시)
+
+### 3. Claude Code 설정 (중요!)
+
+#### 3.1 CLAUDE.md 파일 생성
+프로젝트 루트에 \`.claude/CLAUDE.md\` 생성:
+\`\`\`markdown
+# [프로젝트명] - Claude Code 설정
+
+## 프로젝트 개요
+[PRD 요약]
+
+## 기술 스택
+[사용된 기술 목록]
+
+## 주요 명령어
+- \`/dev\` - 개발 서버 실행
+- \`/test\` - 테스트 실행
+- \`/build\` - 프로덕션 빌드
+
+## 코드 컨벤션
+[프로젝트에 맞는 컨벤션]
+
+## 폴더 구조
+[생성된 구조 설명]
+\`\`\`
+
+#### 3.2 커스텀 Skills 생성
+\`.claude/commands/\` 폴더에 프로젝트 맞춤형 스킬(슬래시 커맨드) 정의:
+
+**feature.md** - 새 기능 추가
+\`\`\`markdown
+---
+description: 새 기능을 추가합니다
+arguments: <기능명>
+---
+
+# /feature - 새 기능 추가
+
+$ARGUMENTS 기능을 이 프로젝트에 추가합니다.
+
+## 절차
+1. 요구사항 분석
+2. 관련 컴포넌트/모듈 생성
+3. 라우팅 추가 (필요시)
+4. 테스트 작성
+5. 문서 업데이트
+\`\`\`
+
+**component.md** - 컴포넌트 생성
+\`\`\`markdown
+---
+description: 새 컴포넌트를 생성합니다
+arguments: <컴포넌트명>
+---
+
+# /component $ARGUMENTS
+
+프로젝트 컨벤션에 맞게 $ARGUMENTS 컴포넌트를 생성합니다.
+\`\`\`
+
+**api.md** - API 엔드포인트 생성
+\`\`\`markdown
+---
+description: 새 API 엔드포인트를 생성합니다
+arguments: <엔드포인트명>
+---
+
+# /api $ARGUMENTS
+
+RESTful 규칙에 따라 $ARGUMENTS API 엔드포인트를 생성합니다.
+\`\`\`
+
+**review.md** - 코드 리뷰
+\`\`\`markdown
+---
+description: 코드 변경사항을 리뷰합니다
+arguments: [파일경로 또는 staged]
+---
+
+# /review $ARGUMENTS
+
+코드 리뷰를 수행합니다.
+
+## 체크리스트
+- 코드 품질 및 가독성
+- 버그 가능성 및 엣지 케이스
+- 보안 취약점 (OWASP Top 10)
+- 성능 이슈
+- 컨벤션 준수
+- 테스트 커버리지
+\`\`\`
+
+**test.md** - 테스트 생성/실행
+\`\`\`markdown
+---
+description: 테스트를 생성하거나 실행합니다
+arguments: [generate|run] <대상>
+---
+
+# /test $ARGUMENTS
+
+- \`/test generate <파일>\` - 해당 파일의 테스트 코드 생성
+- \`/test run\` - 전체 테스트 실행
+- \`/test run <파일>\` - 특정 파일 테스트 실행
+\`\`\`
+
+**refactor.md** - 리팩토링
+\`\`\`markdown
+---
+description: 코드를 리팩토링합니다
+arguments: <파일경로>
+---
+
+# /refactor $ARGUMENTS
+
+코드 품질 개선을 위한 리팩토링을 수행합니다.
+
+## 개선 항목
+- 중복 코드 제거
+- 함수/클래스 분리
+- 네이밍 개선
+- 복잡도 감소
+- SOLID 원칙 적용
+\`\`\`
+
+**doc.md** - 문서 생성
+\`\`\`markdown
+---
+description: 문서를 생성합니다
+arguments: [readme|api|component] <대상>
+---
+
+# /doc $ARGUMENTS
+
+- \`/doc readme\` - README.md 생성/업데이트
+- \`/doc api\` - API 문서 생성
+- \`/doc component <이름>\` - 컴포넌트 문서 생성
+\`\`\`
+
+**debug.md** - 디버깅 도우미
+\`\`\`markdown
+---
+description: 버그를 분석하고 해결책을 제안합니다
+arguments: <에러메시지 또는 설명>
+---
+
+# /debug $ARGUMENTS
+
+버그를 분석하고 해결책을 제안합니다.
+
+## 분석 과정
+1. 에러 메시지 파싱
+2. 관련 코드 탐색
+3. 근본 원인 분석
+4. 해결책 제안
+5. 재발 방지 방안
+\`\`\`
+
+#### 3.3 팀 에이전트 설정
+\`.claude/agents/\` 폴더에 BTS 팀원 에이전트 정의:
+
+**planner.md** - 기획자 에이전트
+\`\`\`markdown
+---
+name: planner
+description: 기획자 에이전트 - 전략 수립, 요구사항 정의, 우선순위 결정
+---
+
+# 기획자 (Planner) 에이전트
+
+당신은 10년차 시니어 프로덕트 매니저입니다.
+
+## 전문 분야
+- 사용자 문제 정의 (Jobs-to-be-Done)
+- PRD 작성 및 요구사항 정의
+- 우선순위 결정 (RICE, MoSCoW)
+- 스테이크홀더 커뮤니케이션
+
+## 사용 시나리오
+- 새 기능 기획 검토
+- 요구사항 명확화
+- 스펙 문서 작성
+- 우선순위 조정
+\`\`\`
+
+**designer.md** - 디자이너 에이전트
+\`\`\`markdown
+---
+name: designer
+description: 디자이너 에이전트 - UI/UX 설계, 사용자 경험 최적화
+---
+
+# 디자이너 (Designer) 에이전트
+
+당신은 Big Tech 출신의 시니어 프로덕트 디자이너입니다.
+
+## 전문 분야
+- 사용자 리서치와 페르소나
+- 인터랙션 디자인
+- 디자인 시스템 (Atomic Design)
+- 접근성 (A11y)
+
+## 사용 시나리오
+- UI 컴포넌트 설계 리뷰
+- UX 플로우 검토
+- 디자인 시스템 구축
+- 사용성 개선 제안
+\`\`\`
+
+**developer.md** - 개발자 에이전트
+\`\`\`markdown
+---
+name: developer
+description: 개발자 에이전트 - 아키텍처 설계, 코드 리뷰, 기술 검토
+---
+
+# 개발자 (Developer) 에이전트
+
+당신은 FAANG급 테크 리드입니다.
+
+## 전문 분야
+- 시스템 설계 (확장성, 가용성)
+- 클린 코드와 SOLID 원칙
+- 성능 최적화
+- 보안 (OWASP Top 10)
+
+## 사용 시나리오
+- 아키텍처 설계 검토
+- 코드 리뷰
+- 기술 스택 선정
+- 성능 병목 분석
+\`\`\`
+
+**qa.md** - QA 에이전트
+\`\`\`markdown
+---
+name: qa
+description: QA 에이전트 - 품질 검증, 테스트 전략, 버그 탐지
+---
+
+# QA (Quality Assurance) 에이전트
+
+당신은 품질 보증 분야의 수석 엔지니어입니다.
+
+## 전문 분야
+- 테스트 전략 (피라미드, 트로피 모델)
+- 경계값 분석, 동등 분할
+- 자동화 테스트 설계
+- 탐색적 테스팅
+
+## 사용 시나리오
+- 테스트 케이스 생성
+- 엣지 케이스 발견
+- 버그 리포트 작성
+- 품질 메트릭 분석
+\`\`\`
+
+**marketer.md** - 마케터 에이전트
+\`\`\`markdown
+---
+name: marketer
+description: 마케터 에이전트 - 시장 분석, GTM 전략, 그로스
+---
+
+# 마케터 (Marketer) 에이전트
+
+당신은 유니콘 스타트업 CMO급 마케터입니다.
+
+## 전문 분야
+- 그로스 해킹 (AARRR)
+- 고객 세그먼테이션
+- 브랜드 포지셔닝
+- 퍼포먼스 마케팅 (CAC, LTV)
+
+## 사용 시나리오
+- 런칭 전략 수립
+- 타겟 고객 정의
+- 마케팅 카피 작성
+- 경쟁사 분석
+\`\`\`
+
+**analyst.md** - 분석가 에이전트
+\`\`\`markdown
+---
+name: analyst
+description: 분석가 에이전트 - 데이터 분석, KPI 설계, 인사이트 도출
+---
+
+# 데이터 분석가 (Analyst) 에이전트
+
+당신은 데이터 사이언스 리드입니다.
+
+## 전문 분야
+- 가설 기반 분석
+- A/B 테스트 설계
+- 코호트/퍼널 분석
+- 데이터 시각화
+
+## 사용 시나리오
+- KPI 설계
+- 실험 설계 및 분석
+- 대시보드 설계
+- 데이터 기반 의사결정
+\`\`\`
+
+#### 3.4 settings.json
+\`.claude/settings.json\`:
+\`\`\`json
+{
+  "project": {
+    "name": "[프로젝트명]",
+    "type": "[web/mobile/backend/etc]"
+  }
+}
+\`\`\`
+
+### 4. 기본 설정 파일
+- .gitignore
+- .env.example
+- README.md (프로젝트 설명, 설치 방법, 실행 방법)
+- 린터/포매터 설정 (ESLint, Prettier 등)
+
+---
+
+## 진행 순서
+
+1. 먼저 프로젝트 폴더를 생성하고 초기화
+2. 기본 구조와 설정 파일 생성
+3. 핵심 기능의 스캐폴딩 구현
+4. Claude Code 설정 (.claude/ 폴더) 생성
 5. 개발 서버 실행 가능 상태로 마무리
 
 시작해주세요!`;
