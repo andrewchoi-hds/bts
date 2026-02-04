@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { DocumentVersion } from '@/types';
 import MarkdownViewer from './MarkdownViewer';
+import { useAlert } from './AlertModal';
 
 interface DocumentModalProps {
   isOpen: boolean;
@@ -27,6 +28,7 @@ export default function DocumentModal({
   onRefine,
   onVersionChange,
 }: DocumentModalProps) {
+  const { alert } = useAlert();
   const [feedbackInput, setFeedbackInput] = useState('');
   const [showFeedbackInput, setShowFeedbackInput] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
@@ -442,13 +444,21 @@ description: 분석가 에이전트 - 데이터 분석, KPI 설계, 인사이트
 
 시작해주세요!`;
       navigator.clipboard.writeText(prompt);
-      alert('Claude Code용 프롬프트가 클립보드에 복사되었습니다.\n\n1. 터미널에서 프로젝트 폴더로 이동\n2. "claude" 명령어 실행\n3. 프롬프트 붙여넣기');
+      alert({
+        title: '복사 완료',
+        message: 'Claude Code용 프롬프트가 클립보드에 복사되었습니다.\n\n1. 터미널에서 프로젝트 폴더로 이동\n2. "claude" 명령어 실행\n3. 프롬프트 붙여넣기',
+        type: 'success',
+      });
     } else {
       // VS Code / Cursor 열기
       const protocol = ide === 'cursor' ? 'cursor' : 'vscode';
       // 새 창 열기 시도
       window.open(`${protocol}://file/new`, '_blank');
-      alert(`${ide === 'cursor' ? 'Cursor' : 'VS Code'}가 열립니다.\n기획서가 클립보드에 복사되었으니 새 파일에 붙여넣기 하세요.`);
+      alert({
+        title: ide === 'cursor' ? 'Cursor' : 'VS Code',
+        message: `${ide === 'cursor' ? 'Cursor' : 'VS Code'}가 열립니다.\n기획서가 클립보드에 복사되었으니 새 파일에 붙여넣기 하세요.`,
+        type: 'info',
+      });
     }
 
     setShowIdeSelector(false);

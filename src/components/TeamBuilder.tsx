@@ -268,7 +268,7 @@ export default function TeamBuilder({ goal, defaultModel = 'gemini', onComplete,
               <h2 className="text-2xl sm:text-3xl font-semibold mb-2">
                 팀 구성하기
               </h2>
-              <p className="text-[var(--text-secondary)]">
+              <p className="text-[var(--text-primary)]/70">
                 역할을 클릭하여 팀원을 추가/제거하세요
               </p>
             </div>
@@ -284,7 +284,7 @@ export default function TeamBuilder({ goal, defaultModel = 'gemini', onComplete,
 
         {/* Team Presets - Clickable */}
         <div className="mb-6">
-          <h3 className="text-sm font-medium text-[var(--text-secondary)] mb-3">추천 팀 조합</h3>
+          <h3 className="text-sm font-medium text-[var(--text-primary)] mb-3">추천 팀 조합</h3>
           <div className="flex gap-2 overflow-x-auto pb-2">
             {TEAM_PRESETS.map(preset => (
               <button
@@ -296,7 +296,7 @@ export default function TeamBuilder({ goal, defaultModel = 'gemini', onComplete,
                   <span>{preset.icon}</span>
                   <span className="font-medium text-sm group-hover:text-[var(--accent-cyan)] transition-colors">{preset.name}</span>
                 </div>
-                <p className="text-xs text-[var(--text-muted)]">{preset.description}</p>
+                <p className="text-xs text-[var(--text-secondary)]">{preset.description}</p>
               </button>
             ))}
           </div>
@@ -322,7 +322,7 @@ export default function TeamBuilder({ goal, defaultModel = 'gemini', onComplete,
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium text-sm">{role.nameKo}</h4>
-                        <p className="text-xs text-[var(--text-muted)] truncate">{role.description}</p>
+                        <p className="text-xs text-[var(--text-secondary)] truncate">{role.description}</p>
                       </div>
                     </div>
 
@@ -349,7 +349,7 @@ export default function TeamBuilder({ goal, defaultModel = 'gemini', onComplete,
                               <span>{getLevelIcon(role.id, level)}</span>
                               <span>{getLevelLabel(role.id, level)}</span>
                             </span>
-                            <span className={`text-[10px] ${isSelected ? '' : 'text-[var(--text-muted)]'}`}>
+                            <span className={`text-[11px] font-medium ${isSelected ? '' : 'text-[var(--text-secondary)]'}`}>
                               {memberName}
                             </span>
                           </button>
@@ -376,7 +376,7 @@ export default function TeamBuilder({ goal, defaultModel = 'gemini', onComplete,
                 {selectedMembers.length === 0 ? (
                   <div className="p-8 text-center">
                     <div className="text-3xl mb-2">👥</div>
-                    <p className="text-sm text-[var(--text-muted)]">
+                    <p className="text-sm text-[var(--text-secondary)]">
                       왼쪽에서 역할을 클릭하거나<br />추천 조합을 선택하세요
                     </p>
                   </div>
@@ -476,8 +476,8 @@ export default function TeamBuilder({ goal, defaultModel = 'gemini', onComplete,
                                     {getLevelIcon(member.role, member.level)} {getLevelLabel(member.role, member.level)}
                                   </span>
                                 </div>
-                                <p className="text-xs text-[var(--text-muted)]">{roleInfo.nameKo}</p>
-                                <p className="text-[10px] text-[var(--text-muted)] mt-1 truncate" title={member.personality}>
+                                <p className="text-xs text-[var(--text-secondary)]">{roleInfo.nameKo}</p>
+                                <p className="text-[11px] text-[var(--text-tertiary)] mt-1 truncate" title={member.personality}>
                                   {member.personality}
                                 </p>
                               </div>
@@ -528,11 +528,11 @@ export default function TeamBuilder({ goal, defaultModel = 'gemini', onComplete,
               </div>
 
               {/* User Role Tip */}
-              <div className="mt-4 p-3 rounded-xl bg-gradient-to-r from-slate-500/5 to-gray-500/5 border border-[var(--border-subtle)]">
+              <div className="mt-4 p-3 rounded-xl bg-gradient-to-r from-slate-500/10 to-gray-500/10 border border-[var(--border-default)]">
                 <div className="flex items-start gap-2">
                   <span>👤</span>
-                  <div className="text-xs text-[var(--text-muted)]">
-                    <strong className="text-[var(--text-secondary)]">사용자 역할</strong>은 실제 유저 관점에서 피드백을 제공합니다.
+                  <div className="text-xs text-[var(--text-secondary)]">
+                    <strong className="text-[var(--text-primary)]">사용자 역할</strong>은 실제 유저 관점에서 피드백을 제공합니다.
                     까다로운 유저는 문제점을, 초보 유저는 이해하기 어려운 부분을 찾아냅니다.
                   </div>
                 </div>

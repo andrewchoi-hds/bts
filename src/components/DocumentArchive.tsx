@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import type { SessionHistory, DocumentVersion } from '@/types';
 import MarkdownViewer from './MarkdownViewer';
+import { useAlert } from './AlertModal';
 
 interface DocumentArchiveProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ export default function DocumentArchive({
   history,
   onDeleteSession,
 }: DocumentArchiveProps) {
+  const { confirm } = useAlert();
   const [selectedSession, setSelectedSession] = useState<SessionHistory | null>(null);
   const [selectedVersion, setSelectedVersion] = useState<DocumentVersion | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -185,9 +187,16 @@ export default function DocumentArchive({
                           </p>
                         </div>
                         <button
-                          onClick={(e) => {
+                          onClick={async (e) => {
                             e.stopPropagation();
-                            if (confirm('이 기획서를 삭제하시겠습니까?')) {
+                            const confirmed = await confirm({
+                              title: '기획서 삭제',
+                              message: '이 기획서를 삭제하시겠습니까?',
+                              type: 'warning',
+                              confirmText: '삭제',
+                              cancelText: '취소',
+                            });
+                            if (confirmed) {
                               onDeleteSession(session.id);
                               if (selectedSession?.id === session.id) {
                                 setSelectedSession(null);

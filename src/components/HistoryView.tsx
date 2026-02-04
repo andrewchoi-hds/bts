@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { SessionHistory } from '@/types';
+import { useAlert } from './AlertModal';
 
 interface HistoryViewProps {
   history: SessionHistory[];
@@ -17,6 +18,7 @@ export default function HistoryView({
   onClearHistory,
 }: HistoryViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const { confirm } = useAlert();
 
   const filteredHistory = history.filter(session =>
     session.goal.toLowerCase().includes(searchQuery.toLowerCase())
@@ -32,7 +34,7 @@ export default function HistoryView({
           </svg>
         </div>
         <h2 className="text-xl font-semibold mb-2">아직 히스토리가 없습니다</h2>
-        <p className="text-[var(--text-muted)] max-w-md">
+        <p className="text-[var(--text-secondary)] max-w-md">
           새 협업을 시작하면 여기에 세션 기록이 저장됩니다.<br />
           이전에 진행한 토론을 언제든 이어갈 수 있어요.
         </p>
@@ -44,15 +46,23 @@ export default function HistoryView({
     <div className="flex-1 flex flex-col h-full">
       {/* Header */}
       <div className="shrink-0 px-8 py-6 border-b border-[var(--border-subtle)]">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-2xl font-bold">히스토리</h1>
-            <p className="text-sm text-[var(--text-muted)] mt-1">이전 협업 세션을 확인하고 이어서 진행하세요</p>
-          </div>
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-2xl font-bold">히스토리</h1>
+              <p className="text-sm text-[var(--text-secondary)] mt-1">이전 협업 세션을 확인하고 이어서 진행하세요</p>
+            </div>
           {history.length > 0 && (
             <button
-              onClick={() => {
-                if (confirm('모든 히스토리를 삭제하시겠습니까?')) {
+              onClick={async () => {
+                const confirmed = await confirm({
+                  title: '전체 삭제',
+                  message: '모든 히스토리를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.',
+                  type: 'warning',
+                  confirmText: '삭제',
+                  cancelText: '취소',
+                });
+                if (confirmed) {
                   onClearHistory();
                 }
               }}
@@ -63,30 +73,31 @@ export default function HistoryView({
           )}
         </div>
 
-        {/* Search */}
-        <div className="relative max-w-md">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-4 top-1/2 -translate-y-1/2">
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.3-4.3" />
-          </svg>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="세션 검색..."
-            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] rounded-xl pl-12 pr-4 py-3 focus:border-[var(--accent-cyan)] focus:outline-none transition-colors"
-          />
+          {/* Search */}
+          <div className="relative">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-4 top-1/2 -translate-y-1/2">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="세션 검색..."
+              className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] rounded-xl pl-12 pr-4 py-3 focus:border-[var(--accent-cyan)] focus:outline-none transition-colors"
+            />
+          </div>
         </div>
       </div>
 
       {/* Session List */}
       <div className="flex-1 overflow-y-auto overscroll-contain p-8">
         {filteredHistory.length === 0 ? (
-          <div className="text-center py-12 text-[var(--text-muted)]">
+          <div className="text-center py-12 text-[var(--text-secondary)]">
             검색 결과가 없습니다
           </div>
         ) : (
-          <div className="grid gap-4 max-w-4xl">
+          <div className="grid gap-4 max-w-4xl mx-auto">
             {filteredHistory.map((session) => (
               <div
                 key={session.id}
@@ -137,9 +148,16 @@ export default function HistoryView({
 
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={(e) => {
+                      onClick={async (e) => {
                         e.stopPropagation();
-                        if (confirm('이 세션을 삭제하시겠습니까?')) {
+                        const confirmed = await confirm({
+                          title: '세션 삭제',
+                          message: '이 세션을 삭제하시겠습니까?',
+                          type: 'warning',
+                          confirmText: '삭제',
+                          cancelText: '취소',
+                        });
+                        if (confirmed) {
                           onDeleteSession(session.id);
                         }
                       }}

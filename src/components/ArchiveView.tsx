@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import type { SessionHistory, DocumentVersion } from '@/types';
 import MarkdownViewer from './MarkdownViewer';
+import { useAlert } from './AlertModal';
 
 interface ArchiveViewProps {
   history: SessionHistory[];
@@ -13,6 +14,7 @@ export default function ArchiveView({
   history,
   onDeleteSession,
 }: ArchiveViewProps) {
+  const { confirm } = useAlert();
   const [selectedSession, setSelectedSession] = useState<SessionHistory | null>(null);
   const [selectedVersion, setSelectedVersion] = useState<DocumentVersion | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -458,7 +460,7 @@ description: 분석가 에이전트 - 데이터 분석, KPI 설계, 인사이트
           </svg>
         </div>
         <h2 className="text-xl font-semibold mb-2">아직 기획서가 없습니다</h2>
-        <p className="text-[var(--text-muted)] max-w-md">
+        <p className="text-[var(--text-secondary)] max-w-md">
           협업을 통해 기획서를 생성하면<br />
           여기에서 모든 기획서를 확인할 수 있어요.
         </p>
@@ -635,43 +637,45 @@ description: 분석가 에이전트 - 데이터 분석, KPI 설계, 인사이트
     <div className="flex-1 flex flex-col h-full">
       {/* Header */}
       <div className="shrink-0 px-8 py-6 border-b border-[var(--border-subtle)]">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-2xl font-bold">기획서 아카이브</h1>
-            <p className="text-sm text-[var(--text-muted)] mt-1">생성된 기획서를 확인하고 관리하세요</p>
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-2xl font-bold">기획서 아카이브</h1>
+              <p className="text-sm text-[var(--text-secondary)] mt-1">생성된 기획서를 확인하고 관리하세요</p>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-purple)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+              </svg>
+              <span className="text-sm font-medium">{sessionsWithDocs.length}개 문서</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-purple)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
-            </svg>
-            <span className="text-sm font-medium">{sessionsWithDocs.length}개 문서</span>
-          </div>
-        </div>
 
-        {/* Search */}
-        <div className="relative max-w-md">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-4 top-1/2 -translate-y-1/2">
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.3-4.3" />
-          </svg>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="기획서 검색..."
-            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] rounded-xl pl-12 pr-4 py-3 focus:border-[var(--accent-cyan)] focus:outline-none transition-colors"
-          />
+          {/* Search */}
+          <div className="relative">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-4 top-1/2 -translate-y-1/2">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="기획서 검색..."
+              className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] rounded-xl pl-12 pr-4 py-3 focus:border-[var(--accent-cyan)] focus:outline-none transition-colors"
+            />
+          </div>
         </div>
       </div>
 
       {/* Document List */}
       <div className="flex-1 overflow-y-auto overscroll-contain p-8">
         {filteredSessions.length === 0 ? (
-          <div className="text-center py-12 text-[var(--text-muted)]">
+          <div className="text-center py-12 text-[var(--text-secondary)]">
             검색 결과가 없습니다
           </div>
         ) : (
-          <div className="grid gap-4 max-w-4xl">
+          <div className="grid gap-4 max-w-4xl mx-auto">
             {filteredSessions.map((session) => {
               const latestVersion = session.documentVersions?.reduce((a, b) =>
                 a.version > b.version ? a : b
@@ -731,9 +735,16 @@ description: 분석가 에이전트 - 데이터 분석, KPI 설계, 인사이트
 
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={(e) => {
+                        onClick={async (e) => {
                           e.stopPropagation();
-                          if (confirm('이 기획서를 삭제하시겠습니까?')) {
+                          const confirmed = await confirm({
+                            title: '기획서 삭제',
+                            message: '이 기획서를 삭제하시겠습니까?',
+                            type: 'warning',
+                            confirmText: '삭제',
+                            cancelText: '취소',
+                          });
+                          if (confirmed) {
                             onDeleteSession(session.id);
                           }
                         }}
