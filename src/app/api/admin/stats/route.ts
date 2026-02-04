@@ -92,8 +92,42 @@ export async function GET(request: Request) {
     const successCount = await prisma.aPIUsageLog.count({
       where: { createdAt: { gte: startDate }, success: true },
     });
-    const failCount = await prisma.aPIUsageLog.count({
-      where: { createdAt: { gte: startDate }, success: false },
+
+    // 총 메시지 수
+    const messageCount = await prisma.message.count();
+
+    // 총 문서 수
+    const documentCount = await prisma.document.count();
+
+    // 평균 팀 사이즈
+    const teamMemberStats = await prisma.teamMember.groupBy({
+      by: ['sessionId'],
+      _count: true,
+    });
+    const avgTeamSize = teamMemberStats.length > 0
+      ? Math.round((teamMemberStats.reduce((sum, t) => sum + t._count, 0) / teamMemberStats.length) * 10) / 10
+      : 0;
+
+    // 역할 분포
+    const roleStats = await prisma.teamMember.groupBy({
+      by: ['role'],
+      _count: true,
+    });
+    const totalMembers = roleStats.reduce((sum, r) => sum + r._count, 0);
+
+    // 프로바이더별 비용 계산 (추정)
+    // Gemini: $0.000125/1K input, $0.000375/1K output (평균 $0.00025/1K)
+    // OpenAI: $0.0015/1K input, $0.002/1K output (평균 $0.00175/1K)
+    const costByProvider = providerStats.map(p => {
+      const tokens = p._sum.totalTokens || 0;
+      let costPer1K = 0.00025; // default: gemini
+      if (p.provider.toLowerCase() === 'openai') costPer1K = 0.00175;
+      if (p.provider.toLowerCase() === 'claude') costPer1K = 0.003;
+      return {
+        name: p.provider,
+        tokens,
+        cost: Math.round((tokens / 1000) * costPer1K * 100) / 100,
+      };
     });
 
     return NextResponse.json({
@@ -104,6 +138,9 @@ export async function GET(request: Request) {
         userCount,
         activeUsers: activeUsers.length,
         sessionCount,
+        messageCount,
+        documentCount,
+        avgTeamSize,
         successRate: totalStats._count > 0 ? Math.round((successCount / totalStats._count) * 100) : 100,
       },
       daily: dailyData,
@@ -117,6 +154,12 @@ export async function GET(request: Request) {
         tokens: e._sum.totalTokens || 0,
         requests: e._count,
       })),
+      roleDistribution: roleStats.map(r => ({
+        role: r.role,
+        count: r._count,
+        percentage: totalMembers > 0 ? Math.round((r._count / totalMembers) * 100) : 0,
+      })),
+      costByProvider,
     });
   } catch (error) {
     console.error('Admin stats error:', error);

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import MobileBottomNav from './MobileBottomNav';
 
 export type NavItem = 'home' | 'history' | 'archive';
@@ -16,7 +17,10 @@ interface LNBProps {
 
 export default function LNB({ activeItem, onNavigate, isCollaborating, historyCount = 0, archiveCount = 0 }: LNBProps) {
   const { data: session } = useSession();
+  const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const isAdmin = session?.user?.role === 'admin';
 
   const navItems = [
     {
@@ -143,6 +147,28 @@ export default function LNB({ activeItem, onNavigate, isCollaborating, historyCo
               </button>
             );
           })}
+
+          {/* 관리자 메뉴 - admin role만 표시 */}
+          {isAdmin && (
+            <>
+              <div className={`${isCollapsed ? 'my-2' : 'my-3'} border-t border-[var(--border-subtle)]`} />
+              <button
+                onClick={() => router.push('/admin')}
+                title={isCollapsed ? '관리자' : undefined}
+                className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} ${
+                  isCollapsed ? 'p-3' : 'px-4 py-3'
+                } rounded-xl transition-all group text-[var(--text-secondary)] hover:bg-amber-500/10 hover:text-amber-500`}
+              >
+                <span className="text-[var(--text-muted)] group-hover:text-amber-500">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                </span>
+                {!isCollapsed && <span className="font-medium">관리자</span>}
+              </button>
+            </>
+          )}
         </div>
 
         {/* Collapse Toggle (태블릿에서만 표시) */}

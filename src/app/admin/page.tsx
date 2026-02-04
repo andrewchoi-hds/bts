@@ -12,11 +12,16 @@ interface AdminStats {
     userCount: number;
     activeUsers: number;
     sessionCount: number;
+    messageCount: number;
+    documentCount: number;
+    avgTeamSize: number;
     successRate: number;
   };
   daily: Array<{ date: string; tokens: number; requests: number }>;
   byProvider: Array<{ name: string; tokens: number; requests: number }>;
   byEndpoint: Array<{ name: string; tokens: number; requests: number }>;
+  roleDistribution: Array<{ role: string; count: number; percentage: number }>;
+  costByProvider: Array<{ name: string; tokens: number; cost: number }>;
 }
 
 export default function AdminDashboard() {
@@ -111,6 +116,8 @@ export default function AdminDashboard() {
               daily: stats.daily,
               byProvider: stats.byProvider,
               byEndpoint: stats.byEndpoint,
+              roleDistribution: stats.roleDistribution,
+              costByProvider: stats.costByProvider,
             }}
           />
         </div>
