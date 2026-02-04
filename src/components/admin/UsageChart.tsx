@@ -113,6 +113,8 @@ export default function UsageChart({ data }: UsageChartProps) {
                       </Pie>
                       <Tooltip
                         contentStyle={tooltipStyle}
+                        labelStyle={tooltipLabelStyle}
+                        itemStyle={tooltipItemStyle}
                         formatter={(value: number | undefined, name: string | undefined) => [value ?? 0, ROLE_NAMES[name ?? ''] || name || '']}
                       />
                     </PieChart>
@@ -174,6 +176,8 @@ export default function UsageChart({ data }: UsageChartProps) {
                     />
                     <Tooltip
                       contentStyle={tooltipStyle}
+                      labelStyle={tooltipLabelStyle}
+                      itemStyle={tooltipItemStyle}
                       formatter={(value: number | undefined) => [`$${(value ?? 0).toFixed(2)}`, '비용']}
                       cursor={{ fill: 'rgba(16, 185, 129, 0.1)' }}
                     />
