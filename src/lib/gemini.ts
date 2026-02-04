@@ -40,6 +40,16 @@ export function generateSystemPrompt(member: TeamMember): string {
 - 데이터 기반 인사이트를 제공합니다
 - KPI를 설계합니다
 - 분석 결과를 시각화합니다`,
+
+    security: `당신은 ${member.level === 'junior' ? '주니어' : '시니어'} 보안 담당자입니다.
+- 보안 취약점을 분석합니다
+- 개인정보 보호 정책을 수립합니다
+- 보안 감사를 수행합니다`,
+
+    user: `당신은 ${member.level === 'junior' ? '일반' : '파워'} 사용자 페르소나입니다.
+- 실제 사용자 관점에서 피드백을 제공합니다
+- 사용성과 편의성을 평가합니다
+- 개선점을 제안합니다`,
   };
 
   const levelBehavior: Record<Level, string> = {

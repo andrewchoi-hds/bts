@@ -1,8 +1,8 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { useTeamStore } from '@/store/teamStore';
+import MobileBottomNav from './MobileBottomNav';
 
 export type NavItem = 'home' | 'history' | 'archive';
 
@@ -10,17 +10,13 @@ interface LNBProps {
   activeItem: NavItem;
   onNavigate: (item: NavItem) => void;
   isCollaborating?: boolean;
+  historyCount?: number;
+  archiveCount?: number;
 }
 
-export default function LNB({ activeItem, onNavigate, isCollaborating }: LNBProps) {
+export default function LNB({ activeItem, onNavigate, isCollaborating, historyCount = 0, archiveCount = 0 }: LNBProps) {
   const { data: session } = useSession();
-  const { history } = useTeamStore();
-
-  const historyCount = history.length;
-  const archiveCount = useMemo(() =>
-    history.filter(s => s.documentVersions && s.documentVersions.length > 0).length,
-    [history]
-  );
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const navItems = [
     {
@@ -64,91 +60,167 @@ export default function LNB({ activeItem, onNavigate, isCollaborating }: LNBProp
   }
 
   return (
-    <nav className="w-64 h-full bg-[var(--bg-secondary)] border-r border-[var(--border-subtle)] flex flex-col shrink-0">
-      {/* Logo */}
-      <div className="p-6 border-b border-[var(--border-subtle)]">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--accent-cyan)] to-[var(--accent-purple)] flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
-          </div>
-          <div>
-            <h1 className="text-lg font-bold tracking-tight">BTS</h1>
-            <p className="text-xs text-[var(--text-muted)]">Build Team Service</p>
-          </div>
-        </div>
-      </div>
+    <>
+      {/* 모바일 바텀 네비게이션 */}
+      <MobileBottomNav
+        activeItem={activeItem}
+        onNavigate={onNavigate}
+        historyCount={historyCount}
+        archiveCount={archiveCount}
+      />
 
-      {/* Navigation */}
-      <div className="flex-1 p-4 space-y-1">
-        {navItems.map((item) => {
-          const isActive = activeItem === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => onNavigate(item.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${
-                isActive
-                  ? 'bg-[var(--accent-cyan)]/10 text-[var(--accent-cyan)]'
-                  : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]'
-              }`}
-            >
-              <span className={isActive ? 'text-[var(--accent-cyan)]' : 'text-[var(--text-muted)] group-hover:text-[var(--text-secondary)]'}>
-                {item.icon}
-              </span>
-              <span className="font-medium">{item.label}</span>
-              {item.badge && (
-                <span
-                  className="ml-auto text-xs px-2 py-0.5 rounded-full"
-                  style={{
-                    backgroundColor: `color-mix(in srgb, ${item.badgeColor} 15%, transparent)`,
-                    color: item.badgeColor
-                  }}
-                >
-                  {item.badge}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Footer */}
-      <div className="p-4 border-t border-[var(--border-subtle)] space-y-3">
-        {/* User Info & Logout */}
-        {session?.user && (
-          <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-[var(--bg-tertiary)]">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--accent-cyan)] to-[var(--accent-purple)] flex items-center justify-center text-white text-sm font-bold">
-                {session.user.name?.charAt(0).toUpperCase() || 'U'}
-              </div>
-              <div>
-                <p className="text-sm font-medium">{session.user.name}</p>
-              </div>
-            </div>
-            <button
-              onClick={() => signOut({ callbackUrl: '/login' })}
-              className="p-2 rounded-lg hover:bg-[var(--bg-primary)] text-[var(--text-muted)] hover:text-[var(--accent-red)] transition-colors"
-              title="로그아웃"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <polyline points="16 17 21 12 16 7" />
-                <line x1="21" x2="9" y1="12" y2="12" />
+      {/* 태블릿/데스크톱 사이드바 */}
+      <nav className={`hidden md:flex h-full bg-[var(--bg-secondary)] border-r border-[var(--border-subtle)] flex-col shrink-0 transition-all duration-300 ${
+        isCollapsed ? 'w-16' : 'w-64'
+      }`}>
+        {/* Logo */}
+        <div className={`p-4 ${isCollapsed ? 'px-2' : 'p-6'} border-b border-[var(--border-subtle)]`}>
+          <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--accent-cyan)] to-[var(--accent-purple)] flex items-center justify-center shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
               </svg>
-            </button>
+            </div>
+            {!isCollapsed && (
+              <div>
+                <h1 className="text-lg font-bold tracking-tight">BTS</h1>
+                <p className="text-xs text-[var(--text-muted)]">Build Team Service</p>
+              </div>
+            )}
           </div>
-        )}
-
-        {/* Tagline */}
-        <div className="px-4 py-2">
-          <p className="text-xs text-[var(--text-muted)]">AI 가상 팀과 함께 아이디어를 기획서로</p>
         </div>
-      </div>
-    </nav>
+
+        {/* Navigation */}
+        <div className={`flex-1 ${isCollapsed ? 'p-2' : 'p-4'} space-y-1`}>
+          {navItems.map((item) => {
+            const isActive = activeItem === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => onNavigate(item.id)}
+                title={isCollapsed ? item.label : undefined}
+                className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} ${
+                  isCollapsed ? 'p-3' : 'px-4 py-3'
+                } rounded-xl transition-all group ${
+                  isActive
+                    ? 'bg-[var(--accent-cyan)]/10 text-[var(--accent-cyan)]'
+                    : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                <span className={`relative ${isActive ? 'text-[var(--accent-cyan)]' : 'text-[var(--text-muted)] group-hover:text-[var(--text-secondary)]'}`}>
+                  {item.icon}
+                  {isCollapsed && item.badge && (
+                    <span
+                      className="absolute -top-1 -right-1 text-[8px] min-w-[14px] h-3.5 flex items-center justify-center px-1 rounded-full"
+                      style={{
+                        backgroundColor: `color-mix(in srgb, ${item.badgeColor} 25%, transparent)`,
+                        color: item.badgeColor
+                      }}
+                    >
+                      {item.badge}
+                    </span>
+                  )}
+                </span>
+                {!isCollapsed && (
+                  <>
+                    <span className="font-medium">{item.label}</span>
+                    {item.badge && (
+                      <span
+                        className="ml-auto text-xs px-2 py-0.5 rounded-full"
+                        style={{
+                          backgroundColor: `color-mix(in srgb, ${item.badgeColor} 15%, transparent)`,
+                          color: item.badgeColor
+                        }}
+                      >
+                        {item.badge}
+                      </span>
+                    )}
+                  </>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Collapse Toggle (태블릿에서만 표시) */}
+        <div className={`${isCollapsed ? 'p-2' : 'px-4'} pb-2 hidden lg:block`}>
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="w-full p-2 rounded-lg hover:bg-[var(--bg-tertiary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors flex items-center justify-center"
+            title={isCollapsed ? '사이드바 펼치기' : '사이드바 접기'}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={`transition-transform ${isCollapsed ? 'rotate-180' : ''}`}
+            >
+              <path d="m11 17-5-5 5-5" />
+              <path d="m18 17-5-5 5-5" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Footer */}
+        <div className={`${isCollapsed ? 'p-2' : 'p-4'} border-t border-[var(--border-subtle)] space-y-3`}>
+          {/* User Info & Logout */}
+          {session?.user && (
+            <div className={`flex items-center ${isCollapsed ? 'justify-center p-2' : 'justify-between px-4 py-3'} rounded-xl bg-[var(--bg-tertiary)]`}>
+              {isCollapsed ? (
+                <button
+                  onClick={() => signOut({ callbackUrl: '/login' })}
+                  className="p-2 rounded-lg hover:bg-[var(--bg-primary)] text-[var(--text-muted)] hover:text-[var(--accent-red)] transition-colors"
+                  title="로그아웃"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" x2="9" y1="12" y2="12" />
+                  </svg>
+                </button>
+              ) : (
+                <>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--accent-cyan)] to-[var(--accent-purple)] flex items-center justify-center text-white text-sm font-bold">
+                      {session.user.name?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{session.user.name}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => signOut({ callbackUrl: '/login' })}
+                    className="p-2 rounded-lg hover:bg-[var(--bg-primary)] text-[var(--text-muted)] hover:text-[var(--accent-red)] transition-colors"
+                    title="로그아웃"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                      <polyline points="16 17 21 12 16 7" />
+                      <line x1="21" x2="9" y1="12" y2="12" />
+                    </svg>
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Tagline */}
+          {!isCollapsed && (
+            <div className="px-4 py-2">
+              <p className="text-xs text-[var(--text-muted)]">AI 가상 팀과 함께 아이디어를 기획서로</p>
+            </div>
+          )}
+        </div>
+      </nav>
+    </>
   );
 }

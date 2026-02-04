@@ -224,8 +224,8 @@ export async function GET(request: NextRequest) {
       };
     };
 
-    const normalAnalysis = analyzeDoc(normalDoc);
-    const bclAnalysis = analyzeDoc(bclDoc);
+    const normalAnalysis = analyzeDoc(normalDoc.text);
+    const bclAnalysis = analyzeDoc(bclDoc.text);
 
     // 토큰 추정
     const normalTokens = Math.ceil(normalPrompt.length / 2);
@@ -242,7 +242,7 @@ export async function GET(request: NextRequest) {
       comparison: {
         normal: {
           mode: '일반 모드 (한국어 전체)',
-          document: normalDoc,
+          document: normalDoc.text,
           analysis: normalAnalysis,
           timing: {
             generationTime: `${normalTime}ms`,
@@ -251,7 +251,7 @@ export async function GET(request: NextRequest) {
         },
         bcl: {
           mode: 'BCL 모드 (압축 언어)',
-          document: bclDoc,
+          document: bclDoc.text,
           analysis: bclAnalysis,
           timing: {
             generationTime: `${bclTime}ms`,

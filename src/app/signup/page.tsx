@@ -27,8 +27,14 @@ export default function SignupPage() {
       return;
     }
 
-    if (formData.password.length < 4) {
-      setError('비밀번호는 4자 이상이어야 합니다.');
+    if (formData.password.length < 8) {
+      setError('비밀번호는 8자 이상이어야 합니다.');
+      setIsLoading(false);
+      return;
+    }
+
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
+      setError('비밀번호는 대문자, 소문자, 숫자를 포함해야 합니다.');
       setIsLoading(false);
       return;
     }
@@ -124,9 +130,12 @@ export default function SignupPage() {
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 focus:border-[var(--accent-cyan)] focus:outline-none transition-colors"
-                placeholder="4자 이상"
+                placeholder="8자 이상, 대소문자+숫자"
                 required
               />
+              <p className="text-xs text-[var(--text-muted)] mt-1.5">
+                대문자, 소문자, 숫자를 포함해야 합니다
+              </p>
             </div>
 
             <div>

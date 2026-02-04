@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -12,7 +12,7 @@ const errorMessages: Record<string, string> = {
   Default: '로그인 중 오류가 발생했습니다.',
 };
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
@@ -56,6 +56,75 @@ export default function LoginPage() {
   };
 
   return (
+    <div className="bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-default)] p-8">
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {error && (
+          <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+            {error}
+          </div>
+        )}
+
+        <div>
+          <label htmlFor="username" className="block text-sm font-medium mb-2">
+            아이디
+          </label>
+          <input
+            id="username"
+            type="text"
+            value={formData.username}
+            onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 focus:border-[var(--accent-cyan)] focus:outline-none transition-colors"
+            placeholder="아이디 입력"
+            required
+          />
+        </div>
+
+        <div>
+          <label htmlFor="password" className="block text-sm font-medium mb-2">
+            비밀번호
+          </label>
+          <input
+            id="password"
+            type="password"
+            value={formData.password}
+            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 focus:border-[var(--accent-cyan)] focus:outline-none transition-colors"
+            placeholder="••••••••"
+            required
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="w-full btn btn-primary py-3 disabled:opacity-50"
+        >
+          {isLoading ? (
+            <span className="flex items-center justify-center gap-2">
+              <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              로그인 중...
+            </span>
+          ) : (
+            '로그인'
+          )}
+        </button>
+      </form>
+
+      <div className="mt-6 text-center text-sm text-[var(--text-muted)]">
+        계정이 없으신가요?{' '}
+        <Link href="/signup" className="text-[var(--accent-cyan)] hover:underline">
+          회원가입
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)] p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
@@ -71,71 +140,18 @@ export default function LoginPage() {
           <p className="text-[var(--text-muted)]">Build Team Service에 로그인하세요</p>
         </div>
 
-        {/* Form */}
-        <div className="bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-default)] p-8">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {error && (
-              <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
-                {error}
-              </div>
-            )}
-
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium mb-2">
-                아이디
-              </label>
-              <input
-                id="username"
-                type="text"
-                value={formData.username}
-                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 focus:border-[var(--accent-cyan)] focus:outline-none transition-colors"
-                placeholder="아이디 입력"
-                required
-              />
+        {/* Form with Suspense */}
+        <Suspense fallback={
+          <div className="bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-default)] p-8">
+            <div className="animate-pulse space-y-5">
+              <div className="h-10 bg-[var(--bg-tertiary)] rounded-xl" />
+              <div className="h-10 bg-[var(--bg-tertiary)] rounded-xl" />
+              <div className="h-12 bg-[var(--bg-tertiary)] rounded-xl" />
             </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium mb-2">
-                비밀번호
-              </label>
-              <input
-                id="password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 focus:border-[var(--accent-cyan)] focus:outline-none transition-colors"
-                placeholder="••••••••"
-                required
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full btn btn-primary py-3 disabled:opacity-50"
-            >
-              {isLoading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  로그인 중...
-                </span>
-              ) : (
-                '로그인'
-              )}
-            </button>
-          </form>
-
-          <div className="mt-6 text-center text-sm text-[var(--text-muted)]">
-            계정이 없으신가요?{' '}
-            <Link href="/signup" className="text-[var(--accent-cyan)] hover:underline">
-              회원가입
-            </Link>
           </div>
-        </div>
+        }>
+          <LoginForm />
+        </Suspense>
       </div>
     </div>
   );

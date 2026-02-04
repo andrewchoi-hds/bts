@@ -25,6 +25,9 @@ interface TeamState {
   collaborationMode: CollaborationMode;
   settings: ProjectSettings;
 
+  // 사용자 격리
+  currentUserId: string | null;
+
   // 히스토리
   history: SessionHistory[];
 
@@ -57,6 +60,18 @@ interface TeamState {
   addDocumentVersion: (content: string, feedback?: string, changes?: string) => DocumentVersion | null;
   getCurrentDocument: () => DocumentVersion | null;
   setCurrentVersion: (version: number) => void;
+
+  // 통계
+  getSessionStats: () => {
+    totalSessions: number;
+    totalMessages: number;
+    totalDocuments: number;
+    avgTeamSize: number;
+  };
+  getRoleAnalysis: () => Array<{ role: Role; count: number }>;
+
+  // 사용자 관리
+  setCurrentUser: (userId: string | null) => void;
 }
 
 // 기본 페르소나 생성
@@ -86,6 +101,8 @@ const defaultNames: Record<Role, Record<Level, string>> = {
   qa: { junior: '예준', senior: '현우' },
   marketer: { junior: '시우', senior: '하윤' },
   analyst: { junior: '준서', senior: '지유' },
+  security: { junior: '태민', senior: '유진' },
+  user: { junior: '소영', senior: '재현' },
 };
 
 export const useTeamStore = create<TeamState>()(
@@ -100,6 +117,7 @@ export const useTeamStore = create<TeamState>()(
     defaultModel: 'gemini',
     memberModels: {},
   },
+  currentUserId: null,
   history: [],
 
   // 팀 생성
@@ -355,10 +373,105 @@ export const useTeamStore = create<TeamState>()(
     newHistory[existingIndex] = updatedSession;
     set({ history: newHistory });
   },
+
+  // 세션 통계 가져오기
+  getSessionStats: () => {
+    const { history } = get();
+    const totalSessions = history.length;
+    const totalMessages = history.reduce((sum, s) => sum + (s.messages?.length ?? 0), 0);
+    const totalDocuments = history.reduce((sum, s) => sum + (s.documentVersions?.length ?? 0), 0);
+    const avgTeamSize = totalSessions > 0
+      ? Math.round(history.reduce((sum, s) => sum + (s.members?.length ?? 0), 0) / totalSessions * 10) / 10
+      : 0;
+
+    return {
+      totalSessions,
+      totalMessages,
+      totalDocuments,
+      avgTeamSize,
+    };
+  },
+
+  // 역할 분석 가져오기
+  getRoleAnalysis: () => {
+    const { history } = get();
+    const roleCounts: Record<Role, number> = {
+      planner: 0,
+      designer: 0,
+      developer: 0,
+      qa: 0,
+      marketer: 0,
+      analyst: 0,
+      security: 0,
+      user: 0,
+    };
+
+    history.forEach(session => {
+      session.members?.forEach(member => {
+        if (member.role && roleCounts[member.role] !== undefined) {
+          roleCounts[member.role]++;
+        }
+      });
+    });
+
+    return Object.entries(roleCounts)
+      .map(([role, count]) => ({ role: role as Role, count }))
+      .filter(item => item.count > 0);
+  },
+
+  // 사용자 전환 시 데이터 분리 저장/로드
+  setCurrentUser: (userId: string | null) => {
+    const { currentUserId, history, settings } = get();
+
+    // 현재 사용자 데이터 저장 (로그아웃이 아닌 경우)
+    if (currentUserId && currentUserId !== userId) {
+      const currentUserData = { history, settings };
+      localStorage.setItem(`bts-user-${currentUserId}`, JSON.stringify(currentUserData));
+    }
+
+    // 새 사용자 데이터 로드
+    if (userId) {
+      const savedData = localStorage.getItem(`bts-user-${userId}`);
+      if (savedData) {
+        try {
+          const parsed = JSON.parse(savedData);
+          set({
+            currentUserId: userId,
+            history: parsed.history || [],
+            settings: parsed.settings || { defaultModel: 'gemini', memberModels: {} },
+          });
+        } catch {
+          set({
+            currentUserId: userId,
+            history: [],
+            settings: { defaultModel: 'gemini', memberModels: {} },
+          });
+        }
+      } else {
+        set({
+          currentUserId: userId,
+          history: [],
+          settings: { defaultModel: 'gemini', memberModels: {} },
+        });
+      }
+    } else {
+      // 로그아웃 - 현재 데이터 저장 후 초기화
+      if (currentUserId) {
+        const currentUserData = { history, settings };
+        localStorage.setItem(`bts-user-${currentUserId}`, JSON.stringify(currentUserData));
+      }
+      set({
+        currentUserId: null,
+        history: [],
+        team: null,
+      });
+    }
+  },
 }),
     {
       name: 'bts-storage',
       partialize: (state) => ({
+        currentUserId: state.currentUserId,
         history: state.history,
         settings: state.settings,
       }),

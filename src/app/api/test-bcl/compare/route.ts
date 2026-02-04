@@ -172,8 +172,8 @@ export async function GET(request: NextRequest) {
       };
     };
 
-    const normalAnalysis = analyzeResponse(normalResponse);
-    const bclAnalysis = analyzeResponse(bclResponse);
+    const normalAnalysis = analyzeResponse(normalResponse.text);
+    const bclAnalysis = analyzeResponse(bclResponse.text);
 
     // ========================================
     // 4. 토큰 사용량 추정
@@ -193,7 +193,7 @@ export async function GET(request: NextRequest) {
       comparison: {
         normal: {
           mode: '일반 모드 (한국어 전체)',
-          response: normalResponse,
+          response: normalResponse.text,
           analysis: normalAnalysis,
           timing: {
             responseTime: `${normalTime}ms`,
@@ -202,7 +202,7 @@ export async function GET(request: NextRequest) {
         },
         bcl: {
           mode: 'BCL 모드 (압축 언어)',
-          response: bclResponse,
+          response: bclResponse.text,
           analysis: bclAnalysis,
           timing: {
             responseTime: `${bclTime}ms`,

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateText } from '@/lib/ai-providers';
+import { logAPIUsage } from '@/lib/usage-logger';
+import { auth } from '@/lib/auth';
 import type { TeamMember, Message, Role, Level, AIModel } from '@/types';
 
 // 역할별 전문 지식 및 프레임워크
@@ -139,6 +141,48 @@ const ROLE_EXPERTISE: Record<Role, { title: string; expertise: string; framework
 2. 인과 vs 상관 → 단순 상관관계가 아닌 인과관계인가?
 3. 샘플 편향 → 데이터가 전체를 대표하는가?
 4. Actionable Insight → 이 분석 결과로 무엇을 바꿀 수 있는가?`
+  },
+
+  security: {
+    title: '보안 담당자',
+    expertise: `당신은 사이버 보안 전문가 수준의 전문성을 가진 보안 담당자입니다.
+
+**핵심 역량:**
+- 보안 취약점 분석 (OWASP Top 10)
+- 개인정보 보호 및 컴플라이언스 (GDPR, PIPA)
+- 인증/인가 시스템 설계
+- 보안 감사 및 펜테스팅
+- 인시던트 대응 체계`,
+    frameworks: `**활용 프레임워크:**
+- STRIDE: Spoofing, Tampering, Repudiation, Information Disclosure, DoS, Elevation of Privilege
+- Zero Trust Architecture: 신뢰하지 않고 항상 검증
+- Defense in Depth: 다층 보안 전략
+- NIST Cybersecurity Framework: Identify → Protect → Detect → Respond → Recover`,
+    thinkingPattern: `**사고 패턴:**
+1. 공격 표면 → 어디서 공격이 가능한가?
+2. 최소 권한 → 필요한 최소한의 접근 권한만 부여했는가?
+3. 데이터 보호 → 민감 데이터가 안전하게 처리되는가?
+4. 감사 추적 → 모든 중요 활동이 로깅되고 있는가?`
+  },
+
+  user: {
+    title: '사용자 페르소나',
+    expertise: `당신은 실제 서비스 사용자의 관점을 대변하는 역할입니다.
+
+**핵심 역량:**
+- 사용자 경험 피드백 제공
+- 직관적인 사용성 평가
+- 실제 사용 시나리오 제시
+- 불편사항 및 개선점 발견`,
+    frameworks: `**활용 프레임워크:**
+- User Journey Mapping: 실제 사용 흐름에서의 경험 파악
+- Pain Points Analysis: 불편함과 장애물 식별
+- Expectation vs Reality: 기대와 실제 경험의 차이 분석`,
+    thinkingPattern: `**사고 패턴:**
+1. 직관성 → 처음 사용자가 쉽게 이해할 수 있는가?
+2. 가치 인식 → 이 기능이 왜 필요한지 명확한가?
+3. 편의성 → 원하는 것을 빠르게 달성할 수 있는가?
+4. 감정 경험 → 사용하면서 어떤 감정을 느끼는가?`
   }
 };
 
@@ -315,14 +359,24 @@ function formatConversationHistory(messages: Message[]): string {
 }
 
 export async function POST(request: NextRequest) {
+  // 세션에서 사용자 정보 가져오기
+  const session = await auth();
+  const userId = session?.user?.id;
+
+  // 인증 필수
+  if (!userId) {
+    return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
-    const { member, goal, messages, topic, useBCL = false } = body as {
+    const { member, goal, messages, topic, useBCL = false, sessionId } = body as {
       member: TeamMember;
       goal: string;
       messages: Message[];
       topic?: string;
-      useBCL?: boolean; // BCL(압축 언어) 모드 사용 여부
+      useBCL?: boolean;
+      sessionId?: string;
     };
 
     // 팀원에게 지정된 모델 사용 (기본: gemini)
@@ -333,23 +387,16 @@ export async function POST(request: NextRequest) {
     let bclStats: { originalTokens: number; compressedTokens: number; savings: number } | null = null;
 
     if (useBCL) {
-      // ========================================
-      // BCL 모드: AI 전용 압축 언어 사용
-      // ========================================
+      // BCL 모드
       const { generateCompressedPrompt, compressContext } = await import('@/lib/ai-language');
-
       const compressed = compressContext(goal, messages);
       bclStats = compressed.stats;
-
       const prompts = generateCompressedPrompt(member, goal, messages, topic);
       systemPrompt = prompts.systemPrompt;
       userPrompt = prompts.userPrompt;
-
       console.log(`[BCL] 토큰 절약: ${bclStats.savings}% (${bclStats.originalTokens} → ${bclStats.compressedTokens})`);
     } else {
-      // ========================================
-      // 기존 모드: 한국어 전체 컨텍스트
-      // ========================================
+      // 기존 모드
       systemPrompt = generateSystemPrompt(member, goal);
       const historyText = formatConversationHistory(messages);
 
@@ -390,14 +437,43 @@ ${topic ? `**논의 주제**: ${topic}` : ''}
 - 구체적인 제안이나 우려사항을 명확히 표현하세요`;
     }
 
-    const text = await generateText(model, systemPrompt, userPrompt);
+    const response = await generateText(model, systemPrompt, userPrompt);
+
+    // 사용량 로깅 (사용자 ID가 있는 경우)
+    if (userId) {
+      await logAPIUsage({
+        userId,
+        sessionId,
+        provider: response.provider,
+        model: response.model,
+        endpoint: 'chat',
+        usage: response.usage,
+        latencyMs: response.latencyMs,
+        success: true,
+      });
+    }
 
     return NextResponse.json({
-      content: text,
-      ...(bclStats && { bclStats }), // BCL 모드일 때 통계 포함
+      content: response.text,
+      usage: response.usage,
+      ...(bclStats && { bclStats }),
     });
   } catch (error) {
     console.error('AI API 오류:', error);
+
+    // 에러 로깅
+    if (userId) {
+      await logAPIUsage({
+        userId,
+        provider: 'gemini',
+        model: 'unknown',
+        endpoint: 'chat',
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        success: false,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'API 호출 중 오류가 발생했습니다.' },
       { status: 500 }

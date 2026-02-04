@@ -20,6 +20,7 @@ model User {
   name          String?
   password      String    // hashed password
   image         String?
+  role          String    @default("user")  // 'user' | 'admin'
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -27,6 +28,7 @@ model User {
   accounts      Account[]
   sessions      AuthSession[]
   teamSessions  TeamSession[]
+  apiUsageLogs  APIUsageLog[]
 
   @@map("users")
 }
@@ -84,10 +86,11 @@ model TeamSession {
   updatedAt DateTime @updatedAt
 
   // Relations
-  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  members   TeamMember[]
-  messages  Message[]
-  documents Document[]
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  members      TeamMember[]
+  messages     Message[]
+  documents    Document[]
+  apiUsageLogs APIUsageLog[]
 
   @@map("team_sessions")
 }
@@ -142,4 +145,33 @@ model Document {
 
   @@unique([sessionId, version])
   @@map("documents")
+}
+
+// ============================================
+// API Usage Tracking
+// ============================================
+
+model APIUsageLog {
+  id               String   @id @default(cuid())
+  userId           String
+  sessionId        String?
+  provider         String   // 'gemini' | 'openai'
+  model            String
+  endpoint         String   // 'chat' | 'generate' | 'refine'
+  promptTokens     Int
+  completionTokens Int
+  totalTokens      Int
+  latencyMs        Int?
+  success          Boolean  @default(true)
+  errorMessage     String?
+  createdAt        DateTime @default(now())
+
+  // Relations
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session TeamSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([provider])
+  @@map("api_usage_logs")
 }

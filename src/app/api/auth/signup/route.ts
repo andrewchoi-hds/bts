@@ -25,9 +25,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (password.length < 4) {
+    if (password.length < 8) {
       return NextResponse.json(
-        { error: '비밀번호는 4자 이상이어야 합니다.' },
+        { error: '비밀번호는 8자 이상이어야 합니다.' },
+        { status: 400 }
+      );
+    }
+
+    // 비밀번호 복잡성 검사 (대문자, 소문자, 숫자 포함)
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
+      return NextResponse.json(
+        { error: '비밀번호는 대문자, 소문자, 숫자를 포함해야 합니다.' },
         { status: 400 }
       );
     }

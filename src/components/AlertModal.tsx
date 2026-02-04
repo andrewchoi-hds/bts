@@ -66,7 +66,7 @@ export function AlertProvider({ children }: { children: ReactNode }) {
         isOpen: true,
         type: 'confirm',
         options: typeof options === 'string' ? { message: options } : options,
-        resolve,
+        resolve: (value: boolean | void) => resolve(value === true),
       });
     });
   }, []);

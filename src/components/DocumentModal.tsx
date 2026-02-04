@@ -474,34 +474,34 @@ description: 분석가 에이전트 - 데이터 분석, KPI 설계, 인사이트
         onClick={onClose}
       />
 
-      {/* Modal */}
-      <div className="relative w-[90vw] max-w-5xl h-[90vh] bg-[var(--bg-primary)] rounded-2xl border border-[var(--border-default)] shadow-2xl flex flex-col overflow-hidden animate-slideUp">
+      {/* Modal - 모바일에서 전체화면, 데스크톱에서 90vh */}
+      <div className="relative w-full h-full md:w-[90vw] md:max-w-5xl md:h-[90vh] bg-[var(--bg-primary)] md:rounded-2xl md:border md:border-[var(--border-default)] shadow-2xl flex flex-col overflow-hidden animate-slideUp">
         {/* Header */}
-        <div className="shrink-0 px-6 py-4 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
+        <div className="shrink-0 px-4 md:px-6 py-3 md:py-4 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-purple-500 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <div className="flex items-center gap-2 md:gap-4 min-w-0 flex-1">
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-purple-500 flex items-center justify-center shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="md:w-5 md:h-5">
                   <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
                   <polyline points="14 2 14 8 20 8" />
                 </svg>
               </div>
-              <div>
-                <h2 className="text-lg font-semibold">{goal}</h2>
-                <p className="text-sm text-[var(--text-tertiary)]">PRD (Product Requirements Document)</p>
+              <div className="min-w-0 flex-1">
+                <h2 className="text-base md:text-lg font-semibold truncate">{goal}</h2>
+                <p className="text-xs md:text-sm text-[var(--text-tertiary)]">PRD</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 md:gap-3 shrink-0">
               {/* Version Selector */}
               {versions.length > 0 && (
                 <div className="relative">
                   <button
                     onClick={() => setShowVersionHistory(!showVersionHistory)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] hover:border-[var(--border-default)] transition-colors"
+                    className="flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1.5 md:py-2 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] hover:border-[var(--border-default)] transition-colors"
                   >
-                    <span className="text-sm font-medium">v{currentVersion}</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform ${showVersionHistory ? 'rotate-180' : ''}`}>
+                    <span className="text-xs md:text-sm font-medium">v{currentVersion}</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform md:w-3.5 md:h-3.5 ${showVersionHistory ? 'rotate-180' : ''}`}>
                       <path d="m6 9 6 6 6-6" />
                     </svg>
                     {currentVersion < latestVersion && (
@@ -627,9 +627,9 @@ description: 분석가 에이전트 - 데이터 분석, KPI 설계, 인사이트
 
         {/* Footer */}
         {currentDoc && !isGenerating && (
-          <div className="shrink-0 px-6 py-4 border-t border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
+          <div className="shrink-0 px-4 md:px-6 py-3 md:py-4 border-t border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
             {showFeedbackInput ? (
-              <div className="flex gap-3">
+              <div className="flex flex-col md:flex-row gap-2 md:gap-3">
                 <input
                   type="text"
                   value={feedbackInput}
@@ -670,29 +670,31 @@ description: 분석가 에이전트 - 데이터 분석, KPI 설계, 인사이트
                 </button>
               </div>
             ) : (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
+                <div className="flex items-center gap-2 order-2 md:order-1">
                   <button
                     onClick={() => setShowFeedbackInput(true)}
-                    className="btn btn-secondary"
+                    className="btn btn-secondary flex-1 md:flex-none text-sm"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="md:w-4 md:h-4">
                       <path d="M12 20h9" />
                       <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
                     </svg>
-                    수정 요청
+                    <span className="hidden sm:inline">수정 요청</span>
+                    <span className="sm:hidden">수정</span>
                   </button>
-                  <button onClick={onGenerate} className="btn btn-secondary">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <button onClick={onGenerate} className="btn btn-secondary flex-1 md:flex-none text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="md:w-4 md:h-4">
                       <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
                       <path d="M3 3v5h5" />
                       <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
                       <path d="M16 16h5v5" />
                     </svg>
-                    새로 생성
+                    <span className="hidden sm:inline">새로 생성</span>
+                    <span className="sm:hidden">재생성</span>
                   </button>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 order-1 md:order-2">
                   {/* IDE로 프로젝트 생성 */}
                   <div className="relative">
                     <button
@@ -754,16 +756,16 @@ description: 분석가 에이전트 - 데이터 분석, KPI 설계, 인사이트
                     )}
                   </div>
 
-                  <button onClick={handleDownload} className="btn btn-secondary">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <button onClick={handleDownload} className="btn btn-secondary text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="md:w-4 md:h-4">
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                       <polyline points="7 10 12 15 17 10" />
                       <line x1="12" x2="12" y1="15" y2="3" />
                     </svg>
-                    다운로드
+                    <span className="hidden sm:inline">다운로드</span>
                   </button>
-                  <button onClick={handleCopy} className="btn btn-primary">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <button onClick={handleCopy} className="btn btn-primary text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="md:w-4 md:h-4">
                       <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
                       <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
                     </svg>

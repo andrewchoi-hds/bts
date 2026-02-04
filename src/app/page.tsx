@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import LNB, { type NavItem } from '@/components/LNB';
@@ -10,7 +10,6 @@ import ArchiveView from '@/components/ArchiveView';
 import TeamBuilder from '@/components/TeamBuilder';
 import ChatRoom from '@/components/ChatRoom';
 import type { TeamMember, Message, SessionHistory, AIModel } from '@/types';
-import { useTeamStore } from '@/store/teamStore';
 
 type CollaborationStep = 'idle' | 'team-building' | 'chatroom';
 
@@ -24,10 +23,52 @@ export default function Home() {
   const [goal, setGoal] = useState('');
   const [defaultModel, setDefaultModel] = useState<AIModel>('gemini');
   const [members, setMembers] = useState<TeamMember[]>([]);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [loadedMessages, setLoadedMessages] = useState<Message[] | null>(null);
   const [loadedOutput, setLoadedOutput] = useState<string | null>(null);
 
-  const { history, deleteFromHistory, clearHistory } = useTeamStore();
+  // DB 기반 세션 관리
+  const [history, setHistory] = useState<SessionHistory[]>([]);
+  const [isLoadingSessions, setIsLoadingSessions] = useState(true);
+
+  // 세션 목록 가져오기
+  const fetchSessions = useCallback(async () => {
+    if (!session?.user?.id) return;
+
+    try {
+      setIsLoadingSessions(true);
+      const res = await fetch('/api/sessions');
+      if (res.ok) {
+        const data = await res.json();
+        setHistory(data);
+      }
+    } catch (error) {
+      console.error('세션 목록 조회 오류:', error);
+    } finally {
+      setIsLoadingSessions(false);
+    }
+  }, [session?.user?.id]);
+
+  // 세션 삭제
+  const deleteFromHistory = useCallback(async (sessionId: string) => {
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}`, { method: 'DELETE' });
+      if (res.ok) {
+        setHistory(prev => prev.filter(s => s.id !== sessionId));
+      }
+    } catch (error) {
+      console.error('세션 삭제 오류:', error);
+    }
+  }, []);
+
+  // 전체 히스토리 삭제
+  const clearHistory = useCallback(async () => {
+    // 개별 삭제 (bulk delete API가 없으므로)
+    for (const s of history) {
+      await fetch(`/api/sessions/${s.id}`, { method: 'DELETE' });
+    }
+    setHistory([]);
+  }, [history]);
 
   // 인증 체크
   useEffect(() => {
@@ -35,6 +76,13 @@ export default function Home() {
       router.push('/login');
     }
   }, [status, router]);
+
+  // 로그인 시 세션 목록 가져오기
+  useEffect(() => {
+    if (session?.user?.id) {
+      fetchSessions();
+    }
+  }, [session?.user?.id, fetchSessions]);
 
   // 협업 시작
   const handleStartCollaboration = (newGoal: string, model: AIModel) => {
@@ -45,18 +93,44 @@ export default function Home() {
     setCollabStep('team-building');
   };
 
-  // 팀 구성 완료
-  const handleTeamComplete = (newMembers: TeamMember[]) => {
-    setMembers(newMembers);
-    setCollabStep('chatroom');
+  // 팀 구성 완료 - DB에 세션 생성
+  const handleTeamComplete = async (newMembers: TeamMember[]) => {
+    try {
+      const res = await fetch('/api/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          goal,
+          members: newMembers.map(m => ({
+            name: m.name,
+            role: m.role,
+            level: m.level,
+            model: m.model || defaultModel,
+            persona: m.persona,
+          })),
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setSessionId(data.id);
+        setMembers(newMembers);
+        setCollabStep('chatroom');
+      } else {
+        console.error('세션 생성 실패');
+      }
+    } catch (error) {
+      console.error('세션 생성 오류:', error);
+    }
   };
 
   // 히스토리에서 세션 불러오기
-  const handleLoadSession = (session: SessionHistory) => {
-    setGoal(session.goal);
-    setMembers(session.members);
-    setLoadedMessages(session.messages);
-    setLoadedOutput(session.generatedOutput);
+  const handleLoadSession = (loadedSession: SessionHistory) => {
+    setSessionId(loadedSession.id);
+    setGoal(loadedSession.goal);
+    setMembers(loadedSession.members);
+    setLoadedMessages(loadedSession.messages);
+    setLoadedOutput(loadedSession.generatedOutput);
     setCollabStep('chatroom');
   };
 
@@ -65,9 +139,12 @@ export default function Home() {
     setCollabStep('idle');
     setGoal('');
     setMembers([]);
+    setSessionId(null);
     setLoadedMessages(null);
     setLoadedOutput(null);
     setActiveNav('home');
+    // 세션 목록 새로고침
+    fetchSessions();
   };
 
   // 팀 구성으로 돌아가기
@@ -138,9 +215,10 @@ export default function Home() {
     );
   }
 
-  if (collabStep === 'chatroom') {
+  if (collabStep === 'chatroom' && sessionId) {
     return (
       <ChatRoom
+        sessionId={sessionId}
         goal={goal}
         members={members}
         onBack={handleBackToDashboard}
@@ -150,6 +228,9 @@ export default function Home() {
     );
   }
 
+  // 카운트 계산
+  const archiveCount = history.filter(s => s.documentVersions && s.documentVersions.length > 0).length;
+
   // 대시보드 (기본 상태)
   return (
     <div className="h-screen bg-[var(--bg-primary)] flex overflow-hidden">
@@ -157,6 +238,8 @@ export default function Home() {
       <LNB
         activeItem={activeNav}
         onNavigate={setActiveNav}
+        historyCount={history.length}
+        archiveCount={archiveCount}
       />
 
       {/* Main Content */}

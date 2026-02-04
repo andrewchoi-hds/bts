@@ -20,6 +20,8 @@ const ROLE_CODE: Record<Role, string> = {
   qa: 'QA',
   marketer: 'MKT',
   analyst: 'ANL',
+  security: 'SEC',
+  user: 'USR',
 };
 
 const ROLE_DECODE: Record<string, Role> = {
@@ -29,6 +31,8 @@ const ROLE_DECODE: Record<string, Role> = {
   QA: 'qa',
   MKT: 'marketer',
   ANL: 'analyst',
+  SEC: 'security',
+  USR: 'user',
 };
 
 const LEVEL_CODE: Record<Level, string> = {

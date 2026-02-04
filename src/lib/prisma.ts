@@ -13,7 +13,7 @@ const globalForPrisma = globalThis as unknown as {
   pool: Pool | undefined;
 };
 
-function createPrismaClient() {
+function createPrismaClient(): PrismaClient {
   const connectionString = process.env.DATABASE_URL;
 
   if (!connectionString) {
@@ -44,10 +44,38 @@ function createPrismaClient() {
   });
 }
 
-export const prisma = globalForPrisma.prisma ?? createPrismaClient();
+// 빌드 시점 감지 (NEXT_PHASE가 'phase-production-build'일 때)
+const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' ||
+  process.env.npm_lifecycle_event === 'build';
 
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma;
+// 런타임에 prisma 클라이언트를 가져오는 함수
+export function getPrisma(): PrismaClient {
+  if (isBuildTime) {
+    throw new Error('Prisma client should not be accessed during build');
+  }
+
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = createPrismaClient();
+  }
+  return globalForPrisma.prisma;
 }
+
+// 지연 초기화를 위한 프록시
+export const prisma: PrismaClient = new Proxy({} as PrismaClient, {
+  get(_target, prop) {
+    // 빌드 시점에는 더미 반환
+    if (isBuildTime) {
+      return () => Promise.resolve(null);
+    }
+
+    const client = getPrisma();
+    const value = (client as unknown as Record<string | symbol, unknown>)[prop];
+    // 함수인 경우 this 바인딩 유지
+    if (typeof value === 'function') {
+      return value.bind(client);
+    }
+    return value;
+  },
+});
 
 export default prisma;

@@ -4,9 +4,53 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { ROLES, LEVEL_ICONS, type TeamMember, type Message, type Role, type CollaborationMode, type DocumentVersion } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 import DocumentModal from './DocumentModal';
-import { useTeamStore } from '@/store/teamStore';
+import CollaborationTimeline from './CollaborationTimeline';
+
+type SidebarTab = 'team' | 'timeline';
+
+// 모바일 사이드바 드로어 컴포넌트
+function MobileSidebarDrawer({
+  isOpen,
+  onClose,
+  children,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <>
+      {/* Overlay */}
+      <div
+        className={`fixed inset-0 bg-black/50 z-40 transition-opacity lg:hidden ${
+          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={onClose}
+      />
+      {/* Drawer */}
+      <div
+        className={`fixed top-0 left-0 h-full w-72 bg-[var(--bg-secondary)] z-50 transform transition-transform lg:hidden ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 rounded-lg hover:bg-[var(--bg-tertiary)] text-[var(--text-muted)]"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        </button>
+        {children}
+      </div>
+    </>
+  );
+}
 
 interface ChatRoomProps {
+  sessionId: string;
   goal: string;
   members: TeamMember[];
   onBack: () => void;
@@ -21,6 +65,8 @@ const ROLE_STYLES: Record<Role, { border: string; bg: string; gradient: string; 
   qa: { border: 'border-l-emerald-400', bg: 'bg-emerald-500/10', gradient: 'from-emerald-400 to-green-500', text: 'text-emerald-400' },
   marketer: { border: 'border-l-purple-400', bg: 'bg-purple-500/10', gradient: 'from-purple-400 to-violet-500', text: 'text-purple-400' },
   analyst: { border: 'border-l-blue-400', bg: 'bg-blue-500/10', gradient: 'from-blue-400 to-indigo-500', text: 'text-blue-400' },
+  security: { border: 'border-l-red-400', bg: 'bg-red-500/10', gradient: 'from-red-400 to-rose-500', text: 'text-red-400' },
+  user: { border: 'border-l-gray-400', bg: 'bg-gray-500/10', gradient: 'from-gray-400 to-slate-500', text: 'text-gray-400' },
 };
 
 // 핵심 포인트 파싱 및 렌더링 함수
@@ -83,7 +129,7 @@ const AUTO_DISCUSSION_ROUNDS = [
   { mode: 'review' as CollaborationMode, participants: 'seniors' },
 ];
 
-export default function ChatRoom({ goal, members, onBack, initialMessages, initialOutput }: ChatRoomProps) {
+export default function ChatRoom({ sessionId, goal, members, onBack, initialMessages, initialOutput }: ChatRoomProps) {
   const [messages, setMessages] = useState<Message[]>(initialMessages || []);
   const [isTyping, setIsTyping] = useState<string | null>(null);
   const [mode, setMode] = useState<CollaborationMode>('brainstorming');
@@ -98,16 +144,53 @@ export default function ChatRoom({ goal, members, onBack, initialMessages, initi
   const [pendingRound, setPendingRound] = useState<number | null>(null);
   const [documentVersions, setDocumentVersions] = useState<DocumentVersion[]>([]);
   const [currentDocVersion, setCurrentDocVersion] = useState(0);
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
+  const [sidebarTab, setSidebarTab] = useState<SidebarTab>('team');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isInitializedRef = useRef(!!initialMessages && initialMessages.length > 0);
-  const { saveToHistory, createTeam, addDocumentVersion, setCurrentVersion } = useTeamStore();
 
-  // Create team on mount if not loading from history
-  useEffect(() => {
-    if (!initialMessages) {
-      createTeam(goal);
+  // DB에 메시지 저장
+  const saveMessageToDB = useCallback(async (message: Message) => {
+    try {
+      await fetch(`/api/sessions/${sessionId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'message',
+          data: {
+            memberId: message.memberId,
+            memberName: message.memberName,
+            memberRole: message.memberRole,
+            memberLevel: message.memberLevel,
+            content: message.content,
+          },
+        }),
+      });
+    } catch (error) {
+      console.error('메시지 저장 오류:', error);
     }
-  }, [goal, initialMessages, createTeam]);
+  }, [sessionId]);
+
+  // DB에 문서 버전 저장
+  const saveDocumentToDB = useCallback(async (content: string, feedback?: string, changes?: string) => {
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'document',
+          data: { content, feedback, changes },
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.document;
+      }
+    } catch (error) {
+      console.error('문서 저장 오류:', error);
+    }
+    return null;
+  }, [sessionId]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -189,6 +272,8 @@ export default function ChatRoom({ goal, members, onBack, initialMessages, initi
       };
       setMessages(prev => [...prev, feedbackMessage]);
       currentMessages = [...currentMessages, feedbackMessage];
+      // DB에 저장
+      saveMessageToDB(feedbackMessage);
     }
 
     // 라운드 시작 시스템 메시지
@@ -203,6 +288,8 @@ export default function ChatRoom({ goal, members, onBack, initialMessages, initi
     };
     setMessages(prev => [...prev, systemMessage]);
     currentMessages = [...currentMessages, systemMessage];
+    // DB에 저장
+    saveMessageToDB(systemMessage);
 
     // 참여할 팀원 선택
     let participants: TeamMember[];
@@ -238,6 +325,8 @@ export default function ChatRoom({ goal, members, onBack, initialMessages, initi
 
         setMessages(prev => [...prev, newMessage]);
         currentMessages = [...currentMessages, newMessage];
+        // DB에 저장
+        saveMessageToDB(newMessage);
       } catch (error) {
         console.error('응답 생성 실패:', error);
       }
@@ -247,7 +336,7 @@ export default function ChatRoom({ goal, members, onBack, initialMessages, initi
     }
 
     return currentMessages;
-  }, [members, callGeminiAPI]);
+  }, [members, callGeminiAPI, saveMessageToDB]);
 
   // 자동 토론 시작
   const startAutoDiscussion = useCallback(async () => {
@@ -288,12 +377,10 @@ export default function ChatRoom({ goal, members, onBack, initialMessages, initi
       timestamp: new Date(),
     };
     setMessages(prev => [...prev, completeMessage]);
-    currentMessages = [...currentMessages, completeMessage];
+    // DB에 저장
+    saveMessageToDB(completeMessage);
 
-    // 히스토리에 저장
-    saveToHistory(currentMessages, null);
-
-  }, [members, isAutoMode, executeRound, waitForFeedback, saveToHistory]);
+  }, [members, isAutoMode, executeRound, waitForFeedback, saveMessageToDB]);
 
   // 협업 시작 시 자동 토론
   useEffect(() => {
@@ -322,6 +409,8 @@ export default function ChatRoom({ goal, members, onBack, initialMessages, initi
       timestamp: new Date(),
     };
     setMessages(prev => [...prev, userMessage]);
+    // DB에 저장
+    saveMessageToDB(userMessage);
     const currentInput = userInput;
     setUserInput('');
 
@@ -348,6 +437,8 @@ export default function ChatRoom({ goal, members, onBack, initialMessages, initi
         };
 
         setMessages(prev => [...prev, newMessage]);
+        // DB에 저장
+        saveMessageToDB(newMessage);
       } catch (error) {
         console.error('응답 생성 실패:', error);
       }
@@ -389,16 +480,15 @@ export default function ChatRoom({ goal, members, onBack, initialMessages, initi
       setDocumentVersions(prev => [...prev, newDoc]);
       setCurrentDocVersion(newVersion);
 
-      // 히스토리에 저장
-      saveToHistory(messages, data.content);
-      addDocumentVersion(data.content, undefined, '초기 생성');
+      // DB에 문서 저장
+      saveDocumentToDB(data.content, undefined, '초기 생성');
     } catch (error) {
       console.error('기획서 생성 오류:', error);
       setApiError('기획서 생성 중 오류가 발생했습니다.');
     } finally {
       setIsGenerating(false);
     }
-  }, [goal, messages, isGenerating, documentVersions.length, saveToHistory, addDocumentVersion]);
+  }, [goal, messages, isGenerating, documentVersions.length, saveDocumentToDB]);
 
   // 기획서 수정 (피드백 반영)
   const refineDocument = useCallback(async (feedback: string) => {
@@ -438,22 +528,20 @@ export default function ChatRoom({ goal, members, onBack, initialMessages, initi
       setDocumentVersions(prev => [...prev, newDoc]);
       setCurrentDocVersion(newVersion);
 
-      // 히스토리에 저장
-      saveToHistory(messages, data.content);
-      addDocumentVersion(data.content, feedback, data.changes);
+      // DB에 문서 저장
+      saveDocumentToDB(data.content, feedback, data.changes);
     } catch (error) {
       console.error('기획서 수정 오류:', error);
       setApiError('기획서 수정 중 오류가 발생했습니다.');
     } finally {
       setIsGenerating(false);
     }
-  }, [goal, messages, documentVersions, currentDocVersion, isGenerating, saveToHistory, addDocumentVersion]);
+  }, [goal, documentVersions, currentDocVersion, isGenerating, saveDocumentToDB]);
 
   // 버전 변경
   const handleVersionChange = useCallback((version: number) => {
     setCurrentDocVersion(version);
-    setCurrentVersion(version);
-  }, [setCurrentVersion]);
+  }, []);
 
   const getRoleInfo = (roleId: Role) => ROLES.find(r => r.id === roleId)!;
   const typingMember = members.find(m => m.id === isTyping);
@@ -465,8 +553,20 @@ export default function ChatRoom({ goal, members, onBack, initialMessages, initi
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="h-16 shrink-0 px-6 flex items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
-        <div className="flex items-center gap-4">
+      <header className="h-14 md:h-16 shrink-0 px-3 md:px-6 flex items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
+        <div className="flex items-center gap-2 md:gap-4">
+          {/* Mobile sidebar toggle */}
+          <button
+            onClick={() => setShowMobileSidebar(true)}
+            className="p-2 rounded-lg hover:bg-[var(--bg-tertiary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors lg:hidden"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+          </button>
           <button
             onClick={onBack}
             className="p-2 rounded-lg hover:bg-[var(--bg-tertiary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
@@ -475,8 +575,8 @@ export default function ChatRoom({ goal, members, onBack, initialMessages, initi
               <path d="m15 18-6-6 6-6" />
             </svg>
           </button>
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--accent-cyan)] to-[var(--accent-purple)] flex items-center justify-center">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--accent-cyan)] to-[var(--accent-purple)] flex items-center justify-center hidden md:flex">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                 <circle cx="9" cy="7" r="4" />
@@ -485,30 +585,30 @@ export default function ChatRoom({ goal, members, onBack, initialMessages, initi
               </svg>
             </div>
             <div>
-              <p className="text-xs text-[var(--text-muted)]">협업 진행 중</p>
-              <p className="font-medium text-sm truncate max-w-md">{goal}</p>
+              <p className="text-xs text-[var(--text-muted)] hidden md:block">협업 진행 중</p>
+              <p className="font-medium text-sm truncate max-w-[120px] md:max-w-md">{goal}</p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4">
           {/* Mode Indicator */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--bg-tertiary)]">
+          <div className="flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1.5 rounded-lg bg-[var(--bg-tertiary)]">
             <span>{currentModeInfo?.icon}</span>
-            <span className="text-sm font-medium">{currentModeInfo?.name}</span>
+            <span className="text-xs md:text-sm font-medium hidden sm:inline">{currentModeInfo?.name}</span>
           </div>
 
           {/* Document Button */}
           {discussionComplete && (
             <button
               onClick={() => setShowDocumentModal(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--accent-green)]/10 text-[var(--accent-green)] hover:bg-[var(--accent-green)]/20 transition-colors"
+              className="flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 rounded-lg bg-[var(--accent-green)]/10 text-[var(--accent-green)] hover:bg-[var(--accent-green)]/20 transition-colors"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
                 <polyline points="14 2 14 8 20 8" />
               </svg>
-              <span className="text-sm font-medium">기획서</span>
+              <span className="text-sm font-medium hidden sm:inline">기획서</span>
               {documentVersions.length > 0 && (
                 <span className="text-xs px-1.5 py-0.5 rounded-full bg-[var(--accent-green)]/20">
                   v{currentDocVersion}
@@ -521,145 +621,354 @@ export default function ChatRoom({ goal, members, onBack, initialMessages, initi
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
-      {/* Sidebar - Team Members */}
-      <aside className="w-64 shrink-0 bg-[var(--bg-secondary)] border-r border-[var(--border-subtle)] hidden lg:flex flex-col">
-        {/* 팀 구성 - 고정 높이 */}
-        <div className="p-4 border-b border-[var(--border-subtle)] shrink-0">
-          <h3 className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider mb-3" style={{ fontFamily: 'var(--font-jetbrains)' }}>
-            팀 구성 ({members.length}명)
-          </h3>
-
-          <div className="space-y-2 max-h-[180px] overflow-y-auto overscroll-contain pr-1">
-            {members.map(member => {
-              const roleInfo = getRoleInfo(member.role);
-              const isActive = isTyping === member.id;
-              const isJunior = member.level === 'junior';
-              return (
-                <div
-                  key={member.id}
-                  className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${
-                    isActive ? ROLE_STYLES[member.role].bg : 'hover:bg-[var(--bg-tertiary)]'
-                  }`}
-                >
-                  <div className="relative">
-                    <div className={`w-8 h-8 rounded-full ${ROLE_STYLES[member.role].bg} flex items-center justify-center text-sm`}>
-                      {roleInfo.icon}
-                    </div>
-                    {isActive && (
-                      <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-[var(--bg-secondary)]" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium truncate">{member.name}</span>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
-                        isJunior
-                          ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                          : 'bg-purple-500/15 text-purple-400 border border-purple-500/30'
-                      }`}>
-                        {isJunior ? 'Jr' : 'Sr'}
-                      </span>
-                    </div>
-                    <p className="text-xs text-[var(--text-tertiary)] truncate">{roleInfo.nameKo}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Progress Indicator - 고정 높이 */}
-        {isAutoMode && (
-          <div className="p-4 border-b border-[var(--border-subtle)] shrink-0">
-            <h3 className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider mb-3" style={{ fontFamily: 'var(--font-jetbrains)' }}>
-              진행 상황
-            </h3>
-            <div className="space-y-2">
-              {AUTO_DISCUSSION_ROUNDS.map((round, index) => (
-                <div
-                  key={round.mode}
-                  className={`flex items-center gap-2 text-sm ${
-                    currentRound > index + 1
-                      ? 'text-[var(--accent-green)]'
-                      : currentRound === index + 1
-                      ? 'text-[var(--accent-cyan)]'
-                      : 'text-[var(--text-muted)]'
-                  }`}
-                >
-                  <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${
-                    currentRound > index + 1
-                      ? 'bg-[var(--accent-green)]/20'
-                      : currentRound === index + 1
-                      ? 'bg-[var(--accent-cyan)]/20 animate-pulse'
-                      : 'bg-[var(--bg-tertiary)]'
-                  }`}>
-                    {currentRound > index + 1 ? '✓' : index + 1}
-                  </span>
-                  <span>{COLLABORATION_MODES.find(m => m.id === round.mode)?.name}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Collaboration Mode - 고정 높이 */}
-        <div className="p-4 shrink-0">
-          <h3 className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider mb-3" style={{ fontFamily: 'var(--font-jetbrains)' }}>
-            현재 모드
-          </h3>
-          <div className="p-3 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-subtle)]">
-            <div className="flex items-center gap-2">
-              <span className="text-lg">{currentModeInfo?.icon}</span>
-              <span className="font-medium">{currentModeInfo?.name}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Key Points Summary - 고정 높이, 독립 스크롤 */}
-        {keyPoints.length > 0 && (
-          <div className="p-4 border-t border-[var(--border-subtle)] shrink-0">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider" style={{ fontFamily: 'var(--font-jetbrains)' }}>
-                핵심 포인트
-              </h3>
-              <span className="text-xs px-1.5 py-0.5 rounded-full bg-[var(--accent-cyan)]/15 text-[var(--accent-cyan)]">
-                {keyPoints.length}
+      {/* Mobile Sidebar Drawer */}
+      <MobileSidebarDrawer isOpen={showMobileSidebar} onClose={() => setShowMobileSidebar(false)}>
+        <div className="flex flex-col h-full pt-14">
+          {/* 탭 네비게이션 */}
+          <div className="flex border-b border-[var(--border-subtle)] shrink-0">
+            <button
+              onClick={() => setSidebarTab('team')}
+              className={`flex-1 px-4 py-3 text-sm font-medium transition-colors relative ${
+                sidebarTab === 'team'
+                  ? 'text-[var(--accent-cyan)]'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              }`}
+            >
+              <span className="flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+                팀
               </span>
-            </div>
-            <div className="max-h-[160px] overflow-y-auto space-y-2 pr-1 overscroll-contain">
-              {keyPoints.map((kp, idx) => (
-                <button
-                  key={`${kp.point}-${idx}`}
-                  onClick={() => {
-                    setUserInput(prev => prev ? `${prev}, ${kp.point}` : kp.point);
-                  }}
-                  className="w-full text-left p-2 rounded-lg bg-[var(--bg-tertiary)] hover:bg-[var(--bg-hover)] border border-[var(--border-subtle)] hover:border-[var(--accent-cyan)]/30 transition-all group"
-                >
-                  <div className="flex items-start gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">
-                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                    </svg>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-[var(--text-primary)] group-hover:text-[var(--accent-cyan)] transition-colors line-clamp-2">
-                        {kp.point}
-                      </p>
-                      <p className="text-xs text-[var(--text-muted)] mt-1 flex items-center gap-1">
-                        <span className={`w-2 h-2 rounded-full bg-gradient-to-r ${ROLE_STYLES[kp.role].gradient}`} />
-                        {kp.memberName}
-                      </p>
-                    </div>
+              {sidebarTab === 'team' && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent-cyan)]" />
+              )}
+            </button>
+            <button
+              onClick={() => setSidebarTab('timeline')}
+              className={`flex-1 px-4 py-3 text-sm font-medium transition-colors relative ${
+                sidebarTab === 'timeline'
+                  ? 'text-[var(--accent-purple)]'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              }`}
+            >
+              <span className="flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 8v4l3 3" />
+                  <circle cx="12" cy="12" r="10" />
+                </svg>
+                타임라인
+              </span>
+              {sidebarTab === 'timeline' && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent-purple)]" />
+              )}
+            </button>
+          </div>
+
+          {/* 탭 콘텐츠 */}
+          {sidebarTab === 'team' ? (
+            <div className="flex-1 overflow-y-auto">
+              {/* 팀 구성 */}
+              <div className="p-4 border-b border-[var(--border-subtle)]">
+                <h3 className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider mb-3" style={{ fontFamily: 'var(--font-jetbrains)' }}>
+                  팀 구성 ({members.length}명)
+                </h3>
+                <div className="space-y-2">
+                  {members.map(member => {
+                    const roleInfo = getRoleInfo(member.role);
+                    const isActive = isTyping === member.id;
+                    const isJunior = member.level === 'junior';
+                    return (
+                      <div
+                        key={member.id}
+                        className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${
+                          isActive ? ROLE_STYLES[member.role].bg : 'hover:bg-[var(--bg-tertiary)]'
+                        }`}
+                      >
+                        <div className="relative">
+                          <div className={`w-8 h-8 rounded-full ${ROLE_STYLES[member.role].bg} flex items-center justify-center text-sm`}>
+                            {roleInfo.icon}
+                          </div>
+                          {isActive && (
+                            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-[var(--bg-secondary)]" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium truncate">{member.name}</span>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                              isJunior
+                                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                                : 'bg-purple-500/15 text-purple-400 border border-purple-500/30'
+                            }`}>
+                              {isJunior ? 'Jr' : 'Sr'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-[var(--text-tertiary)] truncate">{roleInfo.nameKo}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 현재 모드 */}
+              <div className="p-4 border-b border-[var(--border-subtle)]">
+                <h3 className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider mb-3" style={{ fontFamily: 'var(--font-jetbrains)' }}>
+                  현재 모드
+                </h3>
+                <div className="p-3 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-subtle)]">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{currentModeInfo?.icon}</span>
+                    <span className="font-medium">{currentModeInfo?.name}</span>
                   </div>
-                </button>
-              ))}
+                </div>
+              </div>
+
+              {/* 핵심 포인트 */}
+              {keyPoints.length > 0 && (
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider" style={{ fontFamily: 'var(--font-jetbrains)' }}>
+                      핵심 포인트
+                    </h3>
+                    <span className="text-xs px-1.5 py-0.5 rounded-full bg-[var(--accent-cyan)]/15 text-[var(--accent-cyan)]">
+                      {keyPoints.length}
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {keyPoints.map((kp, idx) => (
+                      <button
+                        key={`mobile-${kp.point}-${idx}`}
+                        onClick={() => {
+                          setUserInput(prev => prev ? `${prev}, ${kp.point}` : kp.point);
+                          setShowMobileSidebar(false);
+                        }}
+                        className="w-full text-left p-2 rounded-lg bg-[var(--bg-tertiary)] hover:bg-[var(--bg-hover)] border border-[var(--border-subtle)] transition-all"
+                      >
+                        <div className="flex items-start gap-2">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                          </svg>
+                          <p className="text-sm text-[var(--text-primary)] line-clamp-2">{kp.point}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-            <p className="text-[10px] text-[var(--text-muted)] mt-2 text-center">
-              클릭하면 피드백에 추가됩니다
-            </p>
+          ) : (
+            /* 타임라인 탭 */
+            <div className="flex-1 overflow-y-auto p-4">
+              <CollaborationTimeline
+                messages={messages}
+                documentVersions={documentVersions}
+              />
+            </div>
+          )}
+        </div>
+      </MobileSidebarDrawer>
+
+      {/* Desktop Sidebar - Team Members */}
+      <aside className="w-64 shrink-0 bg-[var(--bg-secondary)] border-r border-[var(--border-subtle)] hidden lg:flex flex-col">
+        {/* 탭 네비게이션 */}
+        <div className="flex border-b border-[var(--border-subtle)] shrink-0">
+          <button
+            onClick={() => setSidebarTab('team')}
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors relative ${
+              sidebarTab === 'team'
+                ? 'text-[var(--accent-cyan)]'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            <span className="flex items-center justify-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+              팀
+            </span>
+            {sidebarTab === 'team' && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent-cyan)]" />
+            )}
+          </button>
+          <button
+            onClick={() => setSidebarTab('timeline')}
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors relative ${
+              sidebarTab === 'timeline'
+                ? 'text-[var(--accent-purple)]'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            <span className="flex items-center justify-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 8v4l3 3" />
+                <circle cx="12" cy="12" r="10" />
+              </svg>
+              타임라인
+            </span>
+            {sidebarTab === 'timeline' && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent-purple)]" />
+            )}
+          </button>
+        </div>
+
+        {/* 탭 콘텐츠 */}
+        {sidebarTab === 'team' ? (
+          <>
+            {/* 팀 구성 - 고정 높이 */}
+            <div className="p-4 border-b border-[var(--border-subtle)] shrink-0">
+              <h3 className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider mb-3" style={{ fontFamily: 'var(--font-jetbrains)' }}>
+                팀 구성 ({members.length}명)
+              </h3>
+
+              <div className="space-y-2 max-h-[180px] overflow-y-auto overscroll-contain pr-1">
+                {members.map(member => {
+                  const roleInfo = getRoleInfo(member.role);
+                  const isActive = isTyping === member.id;
+                  const isJunior = member.level === 'junior';
+                  return (
+                    <div
+                      key={member.id}
+                      className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${
+                        isActive ? ROLE_STYLES[member.role].bg : 'hover:bg-[var(--bg-tertiary)]'
+                      }`}
+                    >
+                      <div className="relative">
+                        <div className={`w-8 h-8 rounded-full ${ROLE_STYLES[member.role].bg} flex items-center justify-center text-sm`}>
+                          {roleInfo.icon}
+                        </div>
+                        {isActive && (
+                          <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-[var(--bg-secondary)]" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium truncate">{member.name}</span>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                            isJunior
+                              ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                              : 'bg-purple-500/15 text-purple-400 border border-purple-500/30'
+                          }`}>
+                            {isJunior ? 'Jr' : 'Sr'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-[var(--text-tertiary)] truncate">{roleInfo.nameKo}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Progress Indicator - 고정 높이 */}
+            {isAutoMode && (
+              <div className="p-4 border-b border-[var(--border-subtle)] shrink-0">
+                <h3 className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider mb-3" style={{ fontFamily: 'var(--font-jetbrains)' }}>
+                  진행 상황
+                </h3>
+                <div className="space-y-2">
+                  {AUTO_DISCUSSION_ROUNDS.map((round, index) => (
+                    <div
+                      key={round.mode}
+                      className={`flex items-center gap-2 text-sm ${
+                        currentRound > index + 1
+                          ? 'text-[var(--accent-green)]'
+                          : currentRound === index + 1
+                          ? 'text-[var(--accent-cyan)]'
+                          : 'text-[var(--text-muted)]'
+                      }`}
+                    >
+                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${
+                        currentRound > index + 1
+                          ? 'bg-[var(--accent-green)]/20'
+                          : currentRound === index + 1
+                          ? 'bg-[var(--accent-cyan)]/20 animate-pulse'
+                          : 'bg-[var(--bg-tertiary)]'
+                      }`}>
+                        {currentRound > index + 1 ? '✓' : index + 1}
+                      </span>
+                      <span>{COLLABORATION_MODES.find(m => m.id === round.mode)?.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Collaboration Mode - 고정 높이 */}
+            <div className="p-4 shrink-0">
+              <h3 className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider mb-3" style={{ fontFamily: 'var(--font-jetbrains)' }}>
+                현재 모드
+              </h3>
+              <div className="p-3 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-subtle)]">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{currentModeInfo?.icon}</span>
+                  <span className="font-medium">{currentModeInfo?.name}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Key Points Summary - 고정 높이, 독립 스크롤 */}
+            {keyPoints.length > 0 && (
+              <div className="p-4 border-t border-[var(--border-subtle)] shrink-0">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider" style={{ fontFamily: 'var(--font-jetbrains)' }}>
+                    핵심 포인트
+                  </h3>
+                  <span className="text-xs px-1.5 py-0.5 rounded-full bg-[var(--accent-cyan)]/15 text-[var(--accent-cyan)]">
+                    {keyPoints.length}
+                  </span>
+                </div>
+                <div className="max-h-[160px] overflow-y-auto space-y-2 pr-1 overscroll-contain">
+                  {keyPoints.map((kp, idx) => (
+                    <button
+                      key={`${kp.point}-${idx}`}
+                      onClick={() => {
+                        setUserInput(prev => prev ? `${prev}, ${kp.point}` : kp.point);
+                      }}
+                      className="w-full text-left p-2 rounded-lg bg-[var(--bg-tertiary)] hover:bg-[var(--bg-hover)] border border-[var(--border-subtle)] hover:border-[var(--accent-cyan)]/30 transition-all group"
+                    >
+                      <div className="flex items-start gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">
+                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                        </svg>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-[var(--text-primary)] group-hover:text-[var(--accent-cyan)] transition-colors line-clamp-2">
+                            {kp.point}
+                          </p>
+                          <p className="text-xs text-[var(--text-muted)] mt-1 flex items-center gap-1">
+                            <span className={`w-2 h-2 rounded-full bg-gradient-to-r ${ROLE_STYLES[kp.role].gradient}`} />
+                            {kp.memberName}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-[var(--text-muted)] mt-2 text-center">
+                  클릭하면 피드백에 추가됩니다
+                </p>
+              </div>
+            )}
+          </>
+        ) : (
+          /* 타임라인 탭 */
+          <div className="flex-1 overflow-y-auto p-4">
+            <CollaborationTimeline
+              messages={messages}
+              documentVersions={documentVersions}
+            />
           </div>
         )}
 
         {/* Spacer - 남은 공간 채우기 */}
-        <div className="flex-1" />
+        {sidebarTab === 'team' && <div className="flex-1" />}
 
         {/* API Status - 고정 위치 */}
         {apiError && (

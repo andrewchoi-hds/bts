@@ -1,14 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateLongText } from '@/lib/ai-providers';
+import { logAPIUsage } from '@/lib/usage-logger';
+import { auth } from '@/lib/auth';
 import type { Message, AIModel } from '@/types';
 
 export async function POST(request: NextRequest) {
+  const session = await auth();
+  const userId = session?.user?.id;
+
+  // 인증 필수
+  if (!userId) {
+    return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
-    const { goal, messages, model = 'gemini' } = body as {
+    const { goal, messages, model = 'gemini', sessionId } = body as {
       goal: string;
       messages: Message[];
       model?: AIModel;
+      sessionId?: string;
     };
 
     // 토론 내용 요약
@@ -165,11 +176,41 @@ ${keyPoints.length > 0 ? keyPoints.map((p, i) => `${i + 1}. ${p}`).join('\n') : 
 - 마크다운 테이블, 리스트를 활용해 **가독성 높게** 작성
 - 실제 실행 가능한 수준의 **Actionable** 내용으로 구성`;
 
-    const content = await generateLongText(model, prompt);
+    const response = await generateLongText(model, prompt);
 
-    return NextResponse.json({ content });
+    // 사용량 로깅
+    if (userId) {
+      await logAPIUsage({
+        userId,
+        sessionId,
+        provider: response.provider,
+        model: response.model,
+        endpoint: 'generate',
+        usage: response.usage,
+        latencyMs: response.latencyMs,
+        success: true,
+      });
+    }
+
+    return NextResponse.json({
+      content: response.text,
+      usage: response.usage,
+    });
   } catch (error) {
     console.error('기획서 생성 오류:', error);
+
+    if (userId) {
+      await logAPIUsage({
+        userId,
+        provider: 'gemini',
+        model: 'unknown',
+        endpoint: 'generate',
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        success: false,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : '기획서 생성 중 오류가 발생했습니다.' },
       { status: 500 }
