@@ -7,7 +7,9 @@ export type Role =
   | 'developer'  // 개발자
   | 'qa'         // QA 엔지니어
   | 'marketer'   // 마케터
-  | 'analyst';   // 데이터 분석가
+  | 'analyst'    // 데이터 분석가
+  | 'security'   // 보안 담당자
+  | 'user';      // 사용자 (페르소나)
 
 // 레벨 타입
 export type Level = 'junior' | 'senior';
@@ -128,6 +130,20 @@ export const ROLES: RoleInfo[] = [
     nameKo: '데이터 분석가',
     description: '데이터 기반 의사결정 지원',
     icon: '📊',
+  },
+  {
+    id: 'security',
+    name: 'Security Manager',
+    nameKo: '보안 담당자',
+    description: '보안 취약점 검토, 개인정보 보호',
+    icon: '🛡️',
+  },
+  {
+    id: 'user',
+    name: 'User Persona',
+    nameKo: '사용자',
+    description: '실제 사용자 관점에서 피드백 제공',
+    icon: '👤',
   },
 ];
 

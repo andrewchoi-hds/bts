@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
+import Providers from "@/components/Providers";
 import "./globals.css";
 
 const jetbrainsMono = JetBrains_Mono({
@@ -45,9 +46,11 @@ export default function RootLayout({
         </div>
 
         {/* Main content */}
-        <div className="relative z-10">
-          {children}
-        </div>
+        <Providers>
+          <div className="relative z-10">
+            {children}
+          </div>
+        </Providers>
       </body>
     </html>
   );

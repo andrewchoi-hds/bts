@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import LNB, { type NavItem } from '@/components/LNB';
 import HomeView from '@/components/HomeView';
 import HistoryView from '@/components/HistoryView';
@@ -13,10 +15,11 @@ import { useTeamStore } from '@/store/teamStore';
 type CollaborationStep = 'idle' | 'team-building' | 'chatroom';
 
 export default function Home() {
-  // Navigation state
-  const [activeNav, setActiveNav] = useState<NavItem>('home');
+  const { data: session, status } = useSession();
+  const router = useRouter();
 
-  // Collaboration state
+  // 모든 hooks를 조건부 return 전에 선언
+  const [activeNav, setActiveNav] = useState<NavItem>('home');
   const [collabStep, setCollabStep] = useState<CollaborationStep>('idle');
   const [goal, setGoal] = useState('');
   const [defaultModel, setDefaultModel] = useState<AIModel>('gemini');
@@ -25,6 +28,13 @@ export default function Home() {
   const [loadedOutput, setLoadedOutput] = useState<string | null>(null);
 
   const { history, deleteFromHistory, clearHistory } = useTeamStore();
+
+  // 인증 체크
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    }
+  }, [status, router]);
 
   // 협업 시작
   const handleStartCollaboration = (newGoal: string, model: AIModel) => {
@@ -69,6 +79,23 @@ export default function Home() {
   const handleBackToGoal = () => {
     setCollabStep('idle');
   };
+
+  // 로딩 중
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-[var(--accent-cyan)]/20 border-t-[var(--accent-cyan)] rounded-full animate-spin" />
+          <p className="text-[var(--text-muted)]">로딩 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 미인증
+  if (!session) {
+    return null;
+  }
 
   // 협업 진행 중인 경우 전체 화면
   if (collabStep === 'team-building') {
