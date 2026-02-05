@@ -763,7 +763,7 @@ export default function ChatRoom({ sessionId, goal, members, onBack, initialMess
             </div>
           ) : (
             /* 타임라인 탭 */
-            <div className="flex-1 flex flex-col min-h-0 p-4">
+            <div className="flex-1 flex flex-col min-h-0 overflow-hidden p-4">
               <CollaborationTimeline
                 messages={messages}
                 documentVersions={documentVersions}
@@ -774,7 +774,7 @@ export default function ChatRoom({ sessionId, goal, members, onBack, initialMess
       </MobileSidebarDrawer>
 
       {/* Desktop Sidebar - Team Members */}
-      <aside className="w-64 shrink-0 bg-[var(--bg-secondary)] border-r border-[var(--border-subtle)] hidden lg:flex flex-col">
+      <aside className="w-64 shrink-0 bg-[var(--bg-secondary)] border-r border-[var(--border-subtle)] hidden lg:flex flex-col h-full overflow-hidden">
         {/* 탭 네비게이션 */}
         <div className="flex border-b border-[var(--border-subtle)] shrink-0">
           <button
@@ -959,7 +959,7 @@ export default function ChatRoom({ sessionId, goal, members, onBack, initialMess
           </>
         ) : (
           /* 타임라인 탭 */
-          <div className="flex-1 flex flex-col min-h-0 p-4">
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden p-4">
             <CollaborationTimeline
               messages={messages}
               documentVersions={documentVersions}
