@@ -763,7 +763,7 @@ export default function ChatRoom({ sessionId, goal, members, onBack, initialMess
             </div>
           ) : (
             /* 타임라인 탭 */
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 flex flex-col min-h-0 p-4">
               <CollaborationTimeline
                 messages={messages}
                 documentVersions={documentVersions}
@@ -959,7 +959,7 @@ export default function ChatRoom({ sessionId, goal, members, onBack, initialMess
           </>
         ) : (
           /* 타임라인 탭 */
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 flex flex-col min-h-0 p-4">
             <CollaborationTimeline
               messages={messages}
               documentVersions={documentVersions}
