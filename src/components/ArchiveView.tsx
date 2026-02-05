@@ -419,13 +419,53 @@ description: 분석가 에이전트 - 데이터 분석, KPI 설계, 인사이트
 
 ---
 
-## 진행 순서
+## 진행 순서 (매우 중요 - 반드시 순서대로!)
 
-1. 먼저 프로젝트 폴더를 생성하고 초기화
-2. 기본 구조와 설정 파일 생성
-3. 핵심 기능의 스캐폴딩 구현
-4. Claude Code 설정 (.claude/ 폴더) 생성
-5. 개발 서버 실행 가능 상태로 마무리
+⚠️ **주의**: 아래 단계들은 **반드시 순차적으로** 실행해야 합니다. 병렬 실행 금지!
+
+### Step 1: 프로젝트 폴더 생성
+\`\`\`bash
+mkdir -p [프로젝트명]
+cd [프로젝트명]
+\`\`\`
+
+### Step 2: package.json 생성 및 의존성 설치
+\`\`\`bash
+# 먼저 package.json 생성
+npm init -y  # 또는 pnpm init
+
+# 그 다음 의존성 설치 (이 단계 완료 후에만 npx 명령 가능!)
+npm install [필요한 패키지들]  # 또는 pnpm add
+\`\`\`
+
+### Step 3: 설정 파일 생성 (npm install 완료 후!)
+\`\`\`bash
+# npx 명령어는 반드시 npm install 이후에 실행
+npx tailwindcss init -p  # Tailwind 사용 시
+npx eslint --init        # ESLint 사용 시
+\`\`\`
+
+### Step 4: 폴더 구조 생성
+- src/ 하위 폴더들 생성
+- 기본 파일들 생성 (.gitignore, .env.example, README.md)
+
+### Step 5: 핵심 코드 구현
+- 컴포넌트/모듈 스캐폴딩
+- 라우팅 설정
+- API 엔드포인트
+
+### Step 6: Claude Code 설정
+- .claude/CLAUDE.md 생성
+- .claude/commands/ 스킬 파일들 생성
+
+### Step 7: 실행 확인
+\`\`\`bash
+npm run dev  # 개발 서버가 정상 실행되는지 확인
+\`\`\`
+
+---
+
+**중요**: 각 단계가 완료된 후 다음 단계로 진행하세요. 특히 Step 2의 \`npm install\`이 완료되기 전에 Step 3의 \`npx\` 명령어를 실행하면 오류가 발생합니다!
 
 시작해주세요!`;
       navigator.clipboard.writeText(prompt);
