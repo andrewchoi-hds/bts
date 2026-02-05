@@ -96,25 +96,23 @@ ${selectedVersion.content}
 - 기본적인 UI 레이아웃 (기획서의 UX/UI 방향성 참고)
 - API 엔드포인트 스캐폴딩 (필요시)
 
-### 3. Claude Code 설정 (중요! - 아래 파일들을 모두 실제로 생성해야 함)
-
-⚠️ **주의**: 이 섹션의 모든 파일들은 **실제로 생성**해야 합니다. 폴더만 만들지 말고 각 파일의 내용까지 작성하세요!
+### 3. Claude Code 설정
 
 #### 3.1 CLAUDE.md 파일 생성
-\`.claude/CLAUDE.md\` 파일을 **반드시 생성**하고 다음 내용을 작성하세요:
+프로젝트 루트에 \`.claude/CLAUDE.md\` 파일을 생성하고, 이 프로젝트에 맞는 내용을 작성하세요:
 \`\`\`markdown
 # [프로젝트명] - Claude Code 설정
 
 ## 프로젝트 개요
-[PRD 요약]
+[PRD 요약 - 이 프로젝트의 핵심 목적]
 
 ## 기술 스택
-[사용된 기술 목록]
+[실제 사용된 기술 목록]
 
 ## 주요 명령어
-- \`/dev\` - 개발 서버 실행
-- \`/test\` - 테스트 실행
-- \`/build\` - 프로덕션 빌드
+- \`npm run dev\` - 개발 서버 실행
+- \`npm test\` - 테스트 실행
+- \`npm run build\` - 프로덕션 빌드
 
 ## 코드 컨벤션
 [프로젝트에 맞는 컨벤션]
@@ -123,295 +121,14 @@ ${selectedVersion.content}
 [생성된 구조 설명]
 \`\`\`
 
-#### 3.2 커스텀 Skills 생성
-\`.claude/commands/\` 폴더에 다음 파일들을 **반드시 생성**하세요:
-
-**feature.md** - 새 기능 추가
-\`\`\`markdown
----
-description: 새 기능을 추가합니다
-arguments: <기능명>
----
-
-# /feature - 새 기능 추가
-
-$ARGUMENTS 기능을 이 프로젝트에 추가합니다.
-
-## 절차
-1. 요구사항 분석
-2. 관련 컴포넌트/모듈 생성
-3. 라우팅 추가 (필요시)
-4. 테스트 작성
-5. 문서 업데이트
+#### 3.2 Skills & Agents 설치 (중요!)
+다음 명령어를 실행하여 Claude Code용 skills와 agents를 설치하세요:
+\`\`\`bash
+curl -sL https://raw.githubusercontent.com/andrewchoi-hds/claude-code-config/main/install.sh | bash -s -- -l -p full
 \`\`\`
-
-**component.md** - 컴포넌트 생성
-\`\`\`markdown
----
-description: 새 컴포넌트를 생성합니다
-arguments: <컴포넌트명>
----
-
-# /component $ARGUMENTS
-
-프로젝트 컨벤션에 맞게 $ARGUMENTS 컴포넌트를 생성합니다.
-\`\`\`
-
-**api.md** - API 엔드포인트 생성
-\`\`\`markdown
----
-description: 새 API 엔드포인트를 생성합니다
-arguments: <엔드포인트명>
----
-
-# /api $ARGUMENTS
-
-RESTful 규칙에 따라 $ARGUMENTS API 엔드포인트를 생성합니다.
-\`\`\`
-
-**review.md** - 코드 리뷰
-\`\`\`markdown
----
-description: 코드 변경사항을 리뷰합니다
-arguments: [파일경로 또는 staged]
----
-
-# /review $ARGUMENTS
-
-코드 리뷰를 수행합니다.
-
-## 체크리스트
-- 코드 품질 및 가독성
-- 버그 가능성 및 엣지 케이스
-- 보안 취약점 (OWASP Top 10)
-- 성능 이슈
-- 컨벤션 준수
-- 테스트 커버리지
-\`\`\`
-
-**test.md** - 테스트 생성/실행
-\`\`\`markdown
----
-description: 테스트를 생성하거나 실행합니다
-arguments: [generate|run] <대상>
----
-
-# /test $ARGUMENTS
-
-- \`/test generate <파일>\` - 해당 파일의 테스트 코드 생성
-- \`/test run\` - 전체 테스트 실행
-- \`/test run <파일>\` - 특정 파일 테스트 실행
-\`\`\`
-
-**refactor.md** - 리팩토링
-\`\`\`markdown
----
-description: 코드를 리팩토링합니다
-arguments: <파일경로>
----
-
-# /refactor $ARGUMENTS
-
-코드 품질 개선을 위한 리팩토링을 수행합니다.
-
-## 개선 항목
-- 중복 코드 제거
-- 함수/클래스 분리
-- 네이밍 개선
-- 복잡도 감소
-- SOLID 원칙 적용
-\`\`\`
-
-**doc.md** - 문서 생성
-\`\`\`markdown
----
-description: 문서를 생성합니다
-arguments: [readme|api|component] <대상>
----
-
-# /doc $ARGUMENTS
-
-- \`/doc readme\` - README.md 생성/업데이트
-- \`/doc api\` - API 문서 생성
-- \`/doc component <이름>\` - 컴포넌트 문서 생성
-\`\`\`
-
-**debug.md** - 디버깅 도우미
-\`\`\`markdown
----
-description: 버그를 분석하고 해결책을 제안합니다
-arguments: <에러메시지 또는 설명>
----
-
-# /debug $ARGUMENTS
-
-버그를 분석하고 해결책을 제안합니다.
-
-## 분석 과정
-1. 에러 메시지 파싱
-2. 관련 코드 탐색
-3. 근본 원인 분석
-4. 해결책 제안
-5. 재발 방지 방안
-\`\`\`
-
-#### 3.3 팀 에이전트 설정
-\`.claude/agents/\` 폴더에 다음 파일들을 **반드시 생성**하세요:
-
-**planner.md** - 기획자 에이전트
-\`\`\`markdown
----
-name: planner
-description: 기획자 에이전트 - 전략 수립, 요구사항 정의, 우선순위 결정
----
-
-# 기획자 (Planner) 에이전트
-
-당신은 10년차 시니어 프로덕트 매니저입니다.
-
-## 전문 분야
-- 사용자 문제 정의 (Jobs-to-be-Done)
-- PRD 작성 및 요구사항 정의
-- 우선순위 결정 (RICE, MoSCoW)
-- 스테이크홀더 커뮤니케이션
-
-## 사용 시나리오
-- 새 기능 기획 검토
-- 요구사항 명확화
-- 스펙 문서 작성
-- 우선순위 조정
-\`\`\`
-
-**designer.md** - 디자이너 에이전트
-\`\`\`markdown
----
-name: designer
-description: 디자이너 에이전트 - UI/UX 설계, 사용자 경험 최적화
----
-
-# 디자이너 (Designer) 에이전트
-
-당신은 Big Tech 출신의 시니어 프로덕트 디자이너입니다.
-
-## 전문 분야
-- 사용자 리서치와 페르소나
-- 인터랙션 디자인
-- 디자인 시스템 (Atomic Design)
-- 접근성 (A11y)
-
-## 사용 시나리오
-- UI 컴포넌트 설계 리뷰
-- UX 플로우 검토
-- 디자인 시스템 구축
-- 사용성 개선 제안
-\`\`\`
-
-**developer.md** - 개발자 에이전트
-\`\`\`markdown
----
-name: developer
-description: 개발자 에이전트 - 아키텍처 설계, 코드 리뷰, 기술 검토
----
-
-# 개발자 (Developer) 에이전트
-
-당신은 FAANG급 테크 리드입니다.
-
-## 전문 분야
-- 시스템 설계 (확장성, 가용성)
-- 클린 코드와 SOLID 원칙
-- 성능 최적화
-- 보안 (OWASP Top 10)
-
-## 사용 시나리오
-- 아키텍처 설계 검토
-- 코드 리뷰
-- 기술 스택 선정
-- 성능 병목 분석
-\`\`\`
-
-**qa.md** - QA 에이전트
-\`\`\`markdown
----
-name: qa
-description: QA 에이전트 - 품질 검증, 테스트 전략, 버그 탐지
----
-
-# QA (Quality Assurance) 에이전트
-
-당신은 품질 보증 분야의 수석 엔지니어입니다.
-
-## 전문 분야
-- 테스트 전략 (피라미드, 트로피 모델)
-- 경계값 분석, 동등 분할
-- 자동화 테스트 설계
-- 탐색적 테스팅
-
-## 사용 시나리오
-- 테스트 케이스 생성
-- 엣지 케이스 발견
-- 버그 리포트 작성
-- 품질 메트릭 분석
-\`\`\`
-
-**marketer.md** - 마케터 에이전트
-\`\`\`markdown
----
-name: marketer
-description: 마케터 에이전트 - 시장 분석, GTM 전략, 그로스
----
-
-# 마케터 (Marketer) 에이전트
-
-당신은 유니콘 스타트업 CMO급 마케터입니다.
-
-## 전문 분야
-- 그로스 해킹 (AARRR)
-- 고객 세그먼테이션
-- 브랜드 포지셔닝
-- 퍼포먼스 마케팅 (CAC, LTV)
-
-## 사용 시나리오
-- 런칭 전략 수립
-- 타겟 고객 정의
-- 마케팅 카피 작성
-- 경쟁사 분석
-\`\`\`
-
-**analyst.md** - 분석가 에이전트
-\`\`\`markdown
----
-name: analyst
-description: 분석가 에이전트 - 데이터 분석, KPI 설계, 인사이트 도출
----
-
-# 데이터 분석가 (Analyst) 에이전트
-
-당신은 데이터 사이언스 리드입니다.
-
-## 전문 분야
-- 가설 기반 분석
-- A/B 테스트 설계
-- 코호트/퍼널 분석
-- 데이터 시각화
-
-## 사용 시나리오
-- KPI 설계
-- 실험 설계 및 분석
-- 대시보드 설계
-- 데이터 기반 의사결정
-\`\`\`
-
-#### 3.4 settings.json
-\`.claude/settings.json\` 파일을 **반드시 생성**하세요:
-\`\`\`json
-{
-  "project": {
-    "name": "[프로젝트명]",
-    "type": "[web/mobile/backend/etc]"
-  }
-}
-\`\`\`
+이 명령어가 자동으로 설치하는 항목:
+- \`.claude/commands/\`: 개발 워크플로우 슬래시 커맨드 (feature, component, api, review, test, refactor, doc, debug 등)
+- \`.claude/agents/\`: AI 팀원 에이전트 (planner, designer, developer, qa, marketer, analyst 등)
 
 ### 4. 기본 설정 파일
 - .gitignore
@@ -456,11 +173,15 @@ npx eslint --init        # ESLint 사용 시
 - 라우팅 설정
 - API 엔드포인트
 
-### Step 6: Claude Code 설정 (폴더만 만들지 말고 파일 내용까지!)
-- .claude/CLAUDE.md 파일 생성 (내용 포함)
-- .claude/commands/ 폴더에 각 스킬 파일들 생성 (feature.md, component.md, api.md 등)
-- .claude/agents/ 폴더에 에이전트 파일들 생성 (planner.md, developer.md 등)
-- .claude/settings.json 파일 생성
+### Step 6: Claude Code 설정
+\`\`\`bash
+# 1. .claude/CLAUDE.md 파일 생성 (프로젝트별 내용 작성)
+mkdir -p .claude
+# CLAUDE.md 파일 내용 작성...
+
+# 2. Skills & Agents 설치 (필수!)
+curl -sL https://raw.githubusercontent.com/andrewchoi-hds/claude-code-config/main/install.sh | bash -s -- -l -p full
+\`\`\`
 
 ### Step 7: 실행 확인
 \`\`\`bash
