@@ -238,12 +238,12 @@ npm run dev  # 개발 서버가 정상 실행되는지 확인
     return (
       <div className="flex-1 flex flex-col h-full">
         {/* Header */}
-        <div className="shrink-0 px-8 py-5 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <div className="shrink-0 px-4 sm:px-8 py-4 sm:py-5 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
               <button
                 onClick={handleClose}
-                className="p-2 rounded-lg hover:bg-[var(--bg-tertiary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                className="shrink-0 p-2 rounded-lg hover:bg-[var(--bg-tertiary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="m15 18-6-6 6-6" />
@@ -251,7 +251,7 @@ npm run dev  # 개발 서버가 정상 실행되는지 확인
               </button>
               <div className="min-w-0 flex-1">
                 <h3 className="font-semibold text-base sm:text-lg truncate">{selectedSession.goal}</h3>
-                <div className="flex items-center gap-3 mt-1">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1">
                   <span className="text-sm text-[var(--text-tertiary)]">
                     버전 {selectedVersion.version}
                   </span>
@@ -267,7 +267,7 @@ npm run dev  # 개발 서버가 정상 실행되는지 확인
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               {/* Version Selector */}
               {selectedSession.documentVersions && selectedSession.documentVersions.length > 1 && (
                 <select
@@ -278,45 +278,45 @@ npm run dev  # 개발 서버가 정상 실행되는지 확인
                     );
                     if (version) setSelectedVersion(version);
                   }}
-                  className="bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--accent-cyan)]"
+                  className="bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none focus:border-[var(--accent-cyan)]"
                 >
                   {[...selectedSession.documentVersions]
                     .sort((a, b) => b.version - a.version)
                     .map((v) => (
                       <option key={v.id} value={v.version}>
-                        v{v.version} {v.changes ? `- ${v.changes.slice(0, 20)}` : ''}
+                        v{v.version} {v.changes ? `- ${v.changes.slice(0, 15)}` : ''}
                       </option>
                     ))}
                 </select>
               )}
 
-              <button onClick={handleDownload} className="btn btn-secondary">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <button onClick={handleDownload} className="btn btn-secondary text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="sm:w-4 sm:h-4">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                   <polyline points="7 10 12 15 17 10" />
                   <line x1="12" x2="12" y1="15" y2="3" />
                 </svg>
-                다운로드
+                <span className="hidden sm:inline">다운로드</span>
               </button>
-              <button onClick={handleCopy} className="btn btn-secondary">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <button onClick={handleCopy} className="btn btn-secondary text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="sm:w-4 sm:h-4">
                   <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
                   <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
                 </svg>
-                복사
+                <span className="hidden sm:inline">복사</span>
               </button>
               {/* IDE Selector */}
               <div className="relative">
                 <button
                   onClick={() => setShowIdeSelector(!showIdeSelector)}
-                  className="btn btn-primary"
+                  className="btn btn-primary text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="sm:w-4 sm:h-4">
                     <polyline points="16 18 22 12 16 6" />
                     <polyline points="8 6 2 12 8 18" />
                   </svg>
-                  코드로 만들기
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform ${showIdeSelector ? 'rotate-180' : ''}`}>
+                  <span className="hidden sm:inline">코드로 만들기</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`sm:w-3.5 sm:h-3.5 transition-transform ${showIdeSelector ? 'rotate-180' : ''}`}>
                     <path d="m6 9 6 6 6-6" />
                   </svg>
                 </button>
@@ -354,7 +354,7 @@ npm run dev  # 개발 서버가 정상 실행되는지 확인
         </div>
 
         {/* Document Content */}
-        <div className="flex-1 overflow-y-auto overscroll-contain p-8">
+        <div className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-8">
           <div className="max-w-4xl mx-auto">
             <MarkdownViewer content={selectedVersion.content} />
           </div>
