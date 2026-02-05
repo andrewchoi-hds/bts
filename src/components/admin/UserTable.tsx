@@ -99,25 +99,25 @@ export default function UserTable({ users, onRoleChange, onActiveChange, onMemoC
         <table className="w-full">
           <thead>
             <tr className="border-b border-[var(--border-subtle)]">
-              <th className="px-4 py-4 text-left text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
+              <th className="px-2 sm:px-4 py-3 sm:py-4 text-left text-[10px] sm:text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
                 사용자
               </th>
-              <th className="px-4 py-4 text-center text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
+              <th className="px-2 sm:px-4 py-3 sm:py-4 text-center text-[10px] sm:text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
                 상태
               </th>
-              <th className="px-4 py-4 text-left text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
+              <th className="px-2 sm:px-4 py-3 sm:py-4 text-left text-[10px] sm:text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
                 역할
               </th>
-              <th className="px-4 py-4 text-right text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
+              <th className="hidden sm:table-cell px-4 py-4 text-right text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
                 세션
               </th>
-              <th className="px-4 py-4 text-right text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
+              <th className="hidden sm:table-cell px-4 py-4 text-right text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
                 토큰
               </th>
-              <th className="px-4 py-4 text-left text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider min-w-[200px]">
+              <th className="hidden md:table-cell px-4 py-4 text-left text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider min-w-[200px]">
                 비고
               </th>
-              <th className="px-4 py-4 text-right text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
+              <th className="hidden lg:table-cell px-4 py-4 text-right text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
                 가입일
               </th>
             </tr>
@@ -131,49 +131,49 @@ export default function UserTable({ users, onRoleChange, onActiveChange, onMemoC
                 }`}
               >
                 {/* 사용자 정보 */}
-                <td className="px-4 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className={`relative w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold ${
+                <td className="px-2 sm:px-4 py-3 sm:py-4">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className={`relative w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-bold shrink-0 ${
                       user.isActive
                         ? 'bg-gradient-to-br from-[var(--accent-cyan)] to-[var(--accent-purple)]'
                         : 'bg-gray-500'
                     }`}>
                       {(user.name || user.username).charAt(0).toUpperCase()}
                       {user.hasRecentActivity && (
-                        <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-[var(--bg-secondary)]" />
+                        <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-500 rounded-full border-2 border-[var(--bg-secondary)]" />
                       )}
                     </div>
-                    <div>
-                      <p className="font-medium">{user.name || user.username}</p>
-                      <p className="text-xs text-[var(--text-muted)]">@{user.username}</p>
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm sm:text-base truncate">{user.name || user.username}</p>
+                      <p className="text-[10px] sm:text-xs text-[var(--text-muted)] truncate">@{user.username}</p>
                     </div>
                   </div>
                 </td>
 
                 {/* 활성화 상태 */}
-                <td className="px-4 py-4 text-center">
+                <td className="px-2 sm:px-4 py-3 sm:py-4 text-center">
                   <button
                     onClick={() => handleActiveChange(user.userId, !user.isActive)}
                     disabled={changingActive === user.userId}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    className={`relative inline-flex h-5 w-9 sm:h-6 sm:w-11 items-center rounded-full transition-colors ${
                       user.isActive ? 'bg-green-500' : 'bg-gray-500'
                     } ${changingActive === user.userId ? 'opacity-50' : ''}`}
                   >
                     <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        user.isActive ? 'translate-x-6' : 'translate-x-1'
+                      className={`inline-block h-3.5 w-3.5 sm:h-4 sm:w-4 transform rounded-full bg-white transition-transform ${
+                        user.isActive ? 'translate-x-4 sm:translate-x-6' : 'translate-x-1'
                       }`}
                     />
                   </button>
                 </td>
 
                 {/* 역할 */}
-                <td className="px-4 py-4">
+                <td className="px-2 sm:px-4 py-3 sm:py-4">
                   <select
                     value={user.role}
                     onChange={(e) => handleRoleChange(user.userId, e.target.value)}
                     disabled={changingRole === user.userId}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
+                    className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-medium border transition-colors cursor-pointer ${
                       user.role === 'admin'
                         ? 'bg-amber-500/10 text-amber-500 border-amber-500/30'
                         : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] border-[var(--border-subtle)]'
@@ -185,12 +185,12 @@ export default function UserTable({ users, onRoleChange, onActiveChange, onMemoC
                 </td>
 
                 {/* 세션 수 */}
-                <td className="px-4 py-4 text-right">
+                <td className="hidden sm:table-cell px-4 py-4 text-right">
                   <span className="text-sm">{user.sessionCount}</span>
                 </td>
 
                 {/* 토큰 사용량 */}
-                <td className="px-4 py-4 text-right">
+                <td className="hidden sm:table-cell px-4 py-4 text-right">
                   <div>
                     <span className="font-medium text-sm">{formatNumber(user.usage.totalTokens)}</span>
                     {user.usage.requestCount > 0 && (
@@ -202,7 +202,7 @@ export default function UserTable({ users, onRoleChange, onActiveChange, onMemoC
                 </td>
 
                 {/* 비고 */}
-                <td className="px-4 py-4">
+                <td className="hidden md:table-cell px-4 py-4">
                   {editingMemo === user.userId ? (
                     <div className="flex items-center gap-2">
                       <input
@@ -255,7 +255,7 @@ export default function UserTable({ users, onRoleChange, onActiveChange, onMemoC
                 </td>
 
                 {/* 가입일 */}
-                <td className="px-4 py-4 text-right">
+                <td className="hidden lg:table-cell px-4 py-4 text-right">
                   <span className="text-xs text-[var(--text-muted)]">
                     {formatDate(user.createdAt)}
                   </span>

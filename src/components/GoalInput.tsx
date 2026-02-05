@@ -231,7 +231,7 @@ export default function GoalInput({ onSubmit }: GoalInputProps) {
         </div>
 
         {/* Features */}
-        <div className="mt-16 grid grid-cols-3 gap-4 sm:gap-8">
+        <div className="mt-10 sm:mt-16 grid grid-cols-3 gap-2 sm:gap-4 md:gap-8">
           {[
             { icon: '👥', value: String(ROLES.length), label: '역할' },
             { icon: '🎯', value: '2', label: '레벨' },
@@ -239,13 +239,13 @@ export default function GoalInput({ onSubmit }: GoalInputProps) {
           ].map((stat, index) => (
             <div
               key={index}
-              className="text-center p-4 rounded-xl bg-[var(--bg-secondary)]/50 border border-[var(--border-subtle)]"
+              className="text-center p-3 sm:p-4 rounded-xl bg-[var(--bg-secondary)]/50 border border-[var(--border-subtle)]"
             >
-              <div className="text-2xl mb-1">{stat.icon}</div>
-              <div className="text-2xl font-semibold gradient-text" style={{ fontFamily: 'var(--font-jetbrains)' }}>
+              <div className="text-xl sm:text-2xl mb-1">{stat.icon}</div>
+              <div className="text-xl sm:text-2xl font-semibold gradient-text" style={{ fontFamily: 'var(--font-jetbrains)' }}>
                 {stat.value}
               </div>
-              <div className="text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">
+              <div className="text-[10px] sm:text-xs text-[var(--text-muted)] uppercase tracking-wider mt-1">
                 {stat.label}
               </div>
             </div>

@@ -64,12 +64,12 @@ export default function AdminDashboard() {
         </div>
 
         {/* Period Selector */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           {[7, 14, 30, 90].map((days) => (
             <button
               key={days}
               onClick={() => setPeriod(days)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                 period === days
                   ? 'bg-amber-500 text-white'
                   : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'

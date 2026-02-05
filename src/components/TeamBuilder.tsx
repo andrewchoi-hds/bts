@@ -285,18 +285,18 @@ export default function TeamBuilder({ goal, defaultModel = 'gemini', onComplete,
         {/* Team Presets - Clickable */}
         <div className="mb-6">
           <h3 className="text-sm font-medium text-[var(--text-primary)] mb-3">추천 팀 조합</h3>
-          <div className="flex gap-2 overflow-x-auto pb-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
             {TEAM_PRESETS.map(preset => (
               <button
                 key={preset.id}
                 onClick={() => applyPreset(preset)}
-                className="shrink-0 px-4 py-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] hover:border-[var(--accent-cyan)]/50 hover:bg-[var(--accent-cyan)]/5 transition-all group"
+                className="px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] hover:border-[var(--accent-cyan)]/50 hover:bg-[var(--accent-cyan)]/5 transition-all group text-left"
               >
                 <div className="flex items-center gap-2 mb-1">
-                  <span>{preset.icon}</span>
-                  <span className="font-medium text-sm group-hover:text-[var(--accent-cyan)] transition-colors">{preset.name}</span>
+                  <span className="text-sm sm:text-base">{preset.icon}</span>
+                  <span className="font-medium text-xs sm:text-sm group-hover:text-[var(--accent-cyan)] transition-colors truncate">{preset.name}</span>
                 </div>
-                <p className="text-xs text-[var(--text-secondary)]">{preset.description}</p>
+                <p className="text-[10px] sm:text-xs text-[var(--text-secondary)] line-clamp-1">{preset.description}</p>
               </button>
             ))}
           </div>
@@ -417,7 +417,7 @@ export default function TeamBuilder({ goal, defaultModel = 'gemini', onComplete,
                                   type="text"
                                   value={editForm.name}
                                   onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
-                                  className="w-full mt-1 px-2 py-1.5 text-sm rounded-lg bg-[var(--bg-primary)] border border-[var(--border-subtle)] focus:border-[var(--accent-cyan)] outline-none"
+                                  className="w-full mt-1 px-3 py-2.5 sm:px-2 sm:py-1.5 text-sm rounded-lg bg-[var(--bg-primary)] border border-[var(--border-subtle)] focus:border-[var(--accent-cyan)] outline-none"
                                   placeholder="이름"
                                 />
                               </div>
@@ -428,7 +428,7 @@ export default function TeamBuilder({ goal, defaultModel = 'gemini', onComplete,
                                   type="text"
                                   value={editForm.personality}
                                   onChange={(e) => setEditForm(prev => ({ ...prev, personality: e.target.value }))}
-                                  className="w-full mt-1 px-2 py-1.5 text-sm rounded-lg bg-[var(--bg-primary)] border border-[var(--border-subtle)] focus:border-[var(--accent-cyan)] outline-none"
+                                  className="w-full mt-1 px-3 py-2.5 sm:px-2 sm:py-1.5 text-sm rounded-lg bg-[var(--bg-primary)] border border-[var(--border-subtle)] focus:border-[var(--accent-cyan)] outline-none"
                                   placeholder="예: 열정적이고 아이디어가 넘침"
                                 />
                               </div>
@@ -439,7 +439,7 @@ export default function TeamBuilder({ goal, defaultModel = 'gemini', onComplete,
                                   type="text"
                                   value={editForm.speakingStyle}
                                   onChange={(e) => setEditForm(prev => ({ ...prev, speakingStyle: e.target.value }))}
-                                  className="w-full mt-1 px-2 py-1.5 text-sm rounded-lg bg-[var(--bg-primary)] border border-[var(--border-subtle)] focus:border-[var(--accent-cyan)] outline-none"
+                                  className="w-full mt-1 px-3 py-2.5 sm:px-2 sm:py-1.5 text-sm rounded-lg bg-[var(--bg-primary)] border border-[var(--border-subtle)] focus:border-[var(--accent-cyan)] outline-none"
                                   placeholder="예: 친근하고 호기심 가득한 말투"
                                 />
                               </div>

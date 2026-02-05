@@ -137,8 +137,8 @@ export default function AdminUsersPage() {
         </div>
 
         {/* Period Selector */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-[var(--text-muted)]">사용량 기간:</span>
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <span className="text-xs sm:text-sm text-[var(--text-muted)] w-full sm:w-auto mb-1 sm:mb-0">사용량 기간:</span>
           {[7, 14, 30, 90].map((days) => (
             <button
               key={days}
@@ -146,7 +146,7 @@ export default function AdminUsersPage() {
                 setPeriod(days);
                 setPage(1);
               }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                 period === days
                   ? 'bg-amber-500 text-white'
                   : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
