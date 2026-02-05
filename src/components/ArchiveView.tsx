@@ -96,10 +96,12 @@ ${selectedVersion.content}
 - 기본적인 UI 레이아웃 (기획서의 UX/UI 방향성 참고)
 - API 엔드포인트 스캐폴딩 (필요시)
 
-### 3. Claude Code 설정 (중요!)
+### 3. Claude Code 설정 (중요! - 아래 파일들을 모두 실제로 생성해야 함)
+
+⚠️ **주의**: 이 섹션의 모든 파일들은 **실제로 생성**해야 합니다. 폴더만 만들지 말고 각 파일의 내용까지 작성하세요!
 
 #### 3.1 CLAUDE.md 파일 생성
-프로젝트 루트에 \`.claude/CLAUDE.md\` 생성:
+\`.claude/CLAUDE.md\` 파일을 **반드시 생성**하고 다음 내용을 작성하세요:
 \`\`\`markdown
 # [프로젝트명] - Claude Code 설정
 
@@ -122,7 +124,7 @@ ${selectedVersion.content}
 \`\`\`
 
 #### 3.2 커스텀 Skills 생성
-\`.claude/commands/\` 폴더에 프로젝트 맞춤형 스킬(슬래시 커맨드) 정의:
+\`.claude/commands/\` 폴더에 다음 파일들을 **반드시 생성**하세요:
 
 **feature.md** - 새 기능 추가
 \`\`\`markdown
@@ -254,7 +256,7 @@ arguments: <에러메시지 또는 설명>
 \`\`\`
 
 #### 3.3 팀 에이전트 설정
-\`.claude/agents/\` 폴더에 BTS 팀원 에이전트 정의:
+\`.claude/agents/\` 폴더에 다음 파일들을 **반드시 생성**하세요:
 
 **planner.md** - 기획자 에이전트
 \`\`\`markdown
@@ -401,7 +403,7 @@ description: 분석가 에이전트 - 데이터 분석, KPI 설계, 인사이트
 \`\`\`
 
 #### 3.4 settings.json
-\`.claude/settings.json\`:
+\`.claude/settings.json\` 파일을 **반드시 생성**하세요:
 \`\`\`json
 {
   "project": {
@@ -454,9 +456,11 @@ npx eslint --init        # ESLint 사용 시
 - 라우팅 설정
 - API 엔드포인트
 
-### Step 6: Claude Code 설정
-- .claude/CLAUDE.md 생성
-- .claude/commands/ 스킬 파일들 생성
+### Step 6: Claude Code 설정 (폴더만 만들지 말고 파일 내용까지!)
+- .claude/CLAUDE.md 파일 생성 (내용 포함)
+- .claude/commands/ 폴더에 각 스킬 파일들 생성 (feature.md, component.md, api.md 등)
+- .claude/agents/ 폴더에 에이전트 파일들 생성 (planner.md, developer.md 등)
+- .claude/settings.json 파일 생성
 
 ### Step 7: 실행 확인
 \`\`\`bash
