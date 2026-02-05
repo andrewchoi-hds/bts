@@ -152,10 +152,10 @@ export default function CollaborationTimeline({ messages, documentVersions }: Co
   }
 
   return (
-    <div className="space-y-4">
-      {/* 핵심 포인트 요약 */}
+    <div className="flex flex-col h-full">
+      {/* 핵심 포인트 요약 - 고정 */}
       {allKeyPoints.length > 0 && (
-        <div className="p-4 rounded-xl bg-gradient-to-r from-cyan-500/10 to-purple-500/10 border border-[var(--border-subtle)]">
+        <div className="shrink-0 p-4 rounded-xl bg-gradient-to-r from-cyan-500/10 to-purple-500/10 border border-[var(--border-subtle)] mb-4">
           <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
@@ -183,8 +183,8 @@ export default function CollaborationTimeline({ messages, documentVersions }: Co
         </div>
       )}
 
-      {/* 타임라인 */}
-      <div className="relative pl-4">
+      {/* 타임라인 - 스크롤 영역 */}
+      <div className="flex-1 overflow-y-auto overscroll-contain relative pl-4">
         {/* 세로 라인 */}
         <div className="absolute left-[7px] top-0 bottom-0 w-0.5 bg-[var(--border-subtle)]" />
 
