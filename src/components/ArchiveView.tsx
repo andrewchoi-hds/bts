@@ -685,7 +685,7 @@ description: 분석가 에이전트 - 데이터 분석, KPI 설계, 인사이트
                 <div
                   key={session.id}
                   onClick={() => handleSelectSession(session)}
-                  className="p-4 sm:p-5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] hover:border-[var(--accent-purple)]/50 transition-all cursor-pointer group"
+                  className="p-4 sm:p-5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] hover:border-[var(--accent-purple)]/50 transition-all cursor-pointer group overflow-hidden"
                 >
                   <div className="flex items-start justify-between gap-2 overflow-hidden">
                     <div className="flex items-start gap-3 sm:gap-4 min-w-0 flex-1 overflow-hidden">
