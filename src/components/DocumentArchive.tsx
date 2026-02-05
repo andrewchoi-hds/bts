@@ -227,9 +227,9 @@ export default function DocumentArchive({
             <>
               {/* Document Header */}
               <div className="shrink-0 px-6 py-4 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-semibold">{selectedSession.goal}</h3>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="min-w-0 flex-1 overflow-hidden">
+                    <h3 className="font-semibold truncate">{selectedSession.goal}</h3>
                     <div className="flex items-center gap-3 mt-1">
                       <span className="text-sm text-[var(--text-tertiary)]">
                         버전 {selectedVersion.version}

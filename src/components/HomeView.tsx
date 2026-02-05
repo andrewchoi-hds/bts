@@ -130,7 +130,7 @@ export default function HomeView({ onStartCollaboration, history }: HomeViewProp
                     {history.slice(0, 3).map((session) => (
                       <div
                         key={session.id}
-                        className="p-3 rounded-lg bg-[var(--bg-tertiary)] hover:bg-[var(--bg-hover)] transition-colors"
+                        className="p-3 rounded-lg bg-[var(--bg-tertiary)] hover:bg-[var(--bg-hover)] transition-colors overflow-hidden"
                       >
                         <p className="text-sm font-medium truncate">{session.goal}</p>
                         <div className="flex items-center gap-3 mt-2 text-xs text-[var(--text-muted)]">

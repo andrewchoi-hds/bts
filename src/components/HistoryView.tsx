@@ -102,11 +102,11 @@ export default function HistoryView({
               <div
                 key={session.id}
                 onClick={() => onLoadSession(session)}
-                className="p-5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] hover:border-[var(--accent-cyan)]/50 transition-all cursor-pointer group"
+                className="p-4 sm:p-5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] hover:border-[var(--accent-cyan)]/50 transition-all cursor-pointer group overflow-hidden"
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-lg truncate group-hover:text-[var(--accent-cyan)] transition-colors">
+                <div className="flex items-start justify-between gap-4 overflow-hidden">
+                  <div className="flex-1 min-w-0 overflow-hidden">
+                    <h3 className="font-semibold text-base sm:text-lg truncate group-hover:text-[var(--accent-cyan)] transition-colors">
                       {session.goal}
                     </h3>
                     <div className="flex items-center gap-4 mt-3">
