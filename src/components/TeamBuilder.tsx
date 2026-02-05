@@ -17,7 +17,15 @@ interface SelectedMember {
   name: string;
   personality: string;
   speakingStyle: string;
+  model: AIModel;
 }
+
+// AI 모델 정보
+const AI_MODELS: { id: AIModel; name: string; icon: string; description: string; color: string }[] = [
+  { id: 'gemini', name: 'Gemini', icon: '🔷', description: '창의적·다재다능', color: 'blue' },
+  { id: 'gpt', name: 'GPT', icon: '🟢', description: '논리적·정확함', color: 'green' },
+  { id: 'claude', name: 'Claude', icon: '🟠', description: '분석적·신중함', color: 'orange' },
+];
 
 // 유저 역할은 junior/senior 대신 다른 유형 사용
 type UserType = 'difficult' | 'beginner' | 'power' | 'elderly';
@@ -28,7 +36,7 @@ const USER_TYPES: { id: UserType; label: string; levelMap: Level }[] = [
 ];
 
 // 기본 팀원 프리셋
-const DEFAULT_MEMBERS: Record<Role, Record<Level, Omit<SelectedMember, 'role' | 'level'>>> = {
+const DEFAULT_MEMBERS: Record<Role, Record<Level, Omit<SelectedMember, 'role' | 'level' | 'model'>>> = {
   planner: {
     junior: { name: '민준', personality: '열정적이고 아이디어가 넘침', speakingStyle: '친근하고 호기심 가득한 말투' },
     senior: { name: '서연', personality: '체계적이고 신중함', speakingStyle: '논리적이고 차분한 말투' },
@@ -151,14 +159,15 @@ const TEAM_PRESETS: TeamPreset[] = [
 
 export default function TeamBuilder({ goal, defaultModel = 'gemini', onComplete, onBack }: TeamBuilderProps) {
   const [selectedMembers, setSelectedMembers] = useState<SelectedMember[]>([
-    { role: 'planner', level: 'junior', ...DEFAULT_MEMBERS.planner.junior },
-    { role: 'planner', level: 'senior', ...DEFAULT_MEMBERS.planner.senior },
+    { role: 'planner', level: 'junior', ...DEFAULT_MEMBERS.planner.junior, model: defaultModel },
+    { role: 'planner', level: 'senior', ...DEFAULT_MEMBERS.planner.senior, model: defaultModel },
   ]);
   const [editingMember, setEditingMember] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Omit<SelectedMember, 'role' | 'level'>>({
     name: '',
     personality: '',
     speakingStyle: '',
+    model: defaultModel,
   });
 
   // 토글: 추가/제거
@@ -171,7 +180,7 @@ export default function TeamBuilder({ goal, defaultModel = 'gemini', onComplete,
       const defaults = DEFAULT_MEMBERS[role][level];
       setSelectedMembers(prev => [
         ...prev,
-        { role, level, ...defaults },
+        { role, level, ...defaults, model: defaultModel },
       ]);
     }
   };
@@ -182,6 +191,7 @@ export default function TeamBuilder({ goal, defaultModel = 'gemini', onComplete,
       role: m.role,
       level: m.level,
       ...DEFAULT_MEMBERS[m.role][m.level],
+      model: defaultModel,
     }));
     setSelectedMembers(newMembers);
   };
@@ -199,6 +209,7 @@ export default function TeamBuilder({ goal, defaultModel = 'gemini', onComplete,
       name: member.name,
       personality: member.personality,
       speakingStyle: member.speakingStyle,
+      model: member.model,
     });
     setEditingMember(index);
   };
@@ -222,7 +233,7 @@ export default function TeamBuilder({ goal, defaultModel = 'gemini', onComplete,
       role: m.role,
       level: m.level,
       name: m.name,
-      model: defaultModel,
+      model: m.model,
       persona: {
         personality: m.personality,
         speakingStyle: m.speakingStyle,
@@ -444,6 +455,31 @@ export default function TeamBuilder({ goal, defaultModel = 'gemini', onComplete,
                                 />
                               </div>
 
+                              <div>
+                                <label className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">AI 모델</label>
+                                <div className="grid grid-cols-3 gap-1.5 mt-1">
+                                  {AI_MODELS.map(model => (
+                                    <button
+                                      key={model.id}
+                                      type="button"
+                                      onClick={() => setEditForm(prev => ({ ...prev, model: model.id }))}
+                                      className={`px-2 py-2 rounded-lg text-xs font-medium transition-all flex flex-col items-center gap-0.5 ${
+                                        editForm.model === model.id
+                                          ? model.color === 'blue'
+                                            ? 'bg-blue-500/20 border-2 border-blue-500/50 text-blue-400'
+                                            : model.color === 'green'
+                                              ? 'bg-green-500/20 border-2 border-green-500/50 text-green-400'
+                                              : 'bg-orange-500/20 border-2 border-orange-500/50 text-orange-400'
+                                          : 'bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] hover:bg-[var(--bg-hover)] text-[var(--text-secondary)]'
+                                      }`}
+                                    >
+                                      <span>{model.icon}</span>
+                                      <span>{model.name}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+
                               <div className="flex gap-2 pt-1">
                                 <button
                                   onClick={saveEditing}
@@ -474,6 +510,16 @@ export default function TeamBuilder({ goal, defaultModel = 'gemini', onComplete,
                                       : 'bg-purple-500/15 text-purple-400'
                                   }`}>
                                     {getLevelIcon(member.role, member.level)} {getLevelLabel(member.role, member.level)}
+                                  </span>
+                                  {/* AI 모델 표시 */}
+                                  <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                                    member.model === 'gemini'
+                                      ? 'bg-blue-500/15 text-blue-400'
+                                      : member.model === 'gpt'
+                                        ? 'bg-green-500/15 text-green-400'
+                                        : 'bg-orange-500/15 text-orange-400'
+                                  }`}>
+                                    {AI_MODELS.find(m => m.id === member.model)?.icon} {AI_MODELS.find(m => m.id === member.model)?.name}
                                   </span>
                                 </div>
                                 <p className="text-xs text-[var(--text-secondary)]">{roleInfo.nameKo}</p>

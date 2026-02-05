@@ -121,15 +121,6 @@ ${selectedVersion.content}
 [생성된 구조 설명]
 \`\`\`
 
-#### 3.2 Skills & Agents 설치 (중요!)
-다음 명령어를 실행하여 Claude Code용 skills와 agents를 설치하세요:
-\`\`\`bash
-curl -sL https://raw.githubusercontent.com/andrewchoi-hds/claude-code-config/main/install.sh | bash -s -- -l -p full
-\`\`\`
-이 명령어가 자동으로 설치하는 항목:
-- \`.claude/commands/\`: 개발 워크플로우 슬래시 커맨드 (feature, component, api, review, test, refactor, doc, debug 등)
-- \`.claude/agents/\`: AI 팀원 에이전트 (planner, designer, developer, qa, marketer, analyst 등)
-
 ### 4. 기본 설정 파일
 - .gitignore
 - .env.example
@@ -142,13 +133,20 @@ curl -sL https://raw.githubusercontent.com/andrewchoi-hds/claude-code-config/mai
 
 ⚠️ **주의**: 아래 단계들은 **반드시 순차적으로** 실행해야 합니다. 병렬 실행 금지!
 
-### Step 1: 프로젝트 폴더 생성
+### 🚨 Step 1: Skills & Agents 설치 (가장 먼저!)
+**코드 작성 전에 반드시 먼저 실행하세요!**
+\`\`\`bash
+curl -sL https://raw.githubusercontent.com/andrewchoi-hds/claude-code-config/main/install.sh | bash -s -- -l -p full
+\`\`\`
+이 명령이 완료될 때까지 기다린 후 다음 단계로 진행하세요.
+
+### Step 2: 프로젝트 폴더 생성
 \`\`\`bash
 mkdir -p [프로젝트명]
 cd [프로젝트명]
 \`\`\`
 
-### Step 2: package.json 생성 및 의존성 설치
+### Step 3: package.json 생성 및 의존성 설치
 \`\`\`bash
 # 먼저 package.json 생성
 npm init -y  # 또는 pnpm init
@@ -157,40 +155,36 @@ npm init -y  # 또는 pnpm init
 npm install [필요한 패키지들]  # 또는 pnpm add
 \`\`\`
 
-### Step 3: 설정 파일 생성 (npm install 완료 후!)
+### Step 4: 설정 파일 생성 (npm install 완료 후!)
 \`\`\`bash
 # npx 명령어는 반드시 npm install 이후에 실행
 npx tailwindcss init -p  # Tailwind 사용 시
 npx eslint --init        # ESLint 사용 시
 \`\`\`
 
-### Step 4: 폴더 구조 생성
+### Step 5: 폴더 구조 생성
 - src/ 하위 폴더들 생성
 - 기본 파일들 생성 (.gitignore, .env.example, README.md)
 
-### Step 5: 핵심 코드 구현
+### Step 6: 핵심 코드 구현
 - 컴포넌트/모듈 스캐폴딩
 - 라우팅 설정
 - API 엔드포인트
 
-### Step 6: Claude Code 설정
+### Step 7: CLAUDE.md 파일 생성
 \`\`\`bash
-# 1. .claude/CLAUDE.md 파일 생성 (프로젝트별 내용 작성)
 mkdir -p .claude
 # CLAUDE.md 파일 내용 작성...
-
-# 2. Skills & Agents 설치 (필수!)
-curl -sL https://raw.githubusercontent.com/andrewchoi-hds/claude-code-config/main/install.sh | bash -s -- -l -p full
 \`\`\`
 
-### Step 7: 실행 확인
+### Step 8: 실행 확인
 \`\`\`bash
 npm run dev  # 개발 서버가 정상 실행되는지 확인
 \`\`\`
 
 ---
 
-**중요**: 각 단계가 완료된 후 다음 단계로 진행하세요. 특히 Step 2의 \`npm install\`이 완료되기 전에 Step 3의 \`npx\` 명령어를 실행하면 오류가 발생합니다!
+**중요**: Step 1의 Skills & Agents 설치가 완료된 후에 코드 작성을 시작하세요!
 
 시작해주세요!`;
       navigator.clipboard.writeText(prompt);

@@ -129,6 +129,105 @@ const AUTO_DISCUSSION_ROUNDS = [
   { mode: 'review' as CollaborationMode, participants: 'seniors' },
 ];
 
+// 토론 스타일 타입
+type DiscussionStyle = 'sequential' | 'debate';
+
+// 역할 키워드 매핑 (의견에서 역할 언급 감지용)
+const ROLE_KEYWORDS: Record<Role, string[]> = {
+  planner: ['기획', '전략', '로드맵', '일정', '우선순위', 'PRD', '요구사항'],
+  designer: ['디자인', 'UI', 'UX', '사용자 경험', '인터페이스', '시각적', '레이아웃'],
+  developer: ['개발', '구현', '기술', '아키텍처', 'API', '코드', '성능', '서버'],
+  qa: ['테스트', '품질', 'QA', '버그', '검증', '케이스', '자동화'],
+  marketer: ['마케팅', '시장', '고객', '타겟', '채널', '브랜드', '캠페인'],
+  analyst: ['데이터', '분석', '지표', '측정', 'A/B', '통계', '인사이트'],
+  security: ['보안', '취약점', '인증', '권한', '개인정보', '암호화', 'OWASP'],
+  user: ['사용자', '고객', '편의성', '직관적', '불편', '경험'],
+};
+
+// 의견 유형 감지 (반론/동의/보완)
+function detectOpinionType(content: string): 'agree' | 'disagree' | 'supplement' | 'neutral' {
+  const disagreePatterns = [
+    /하지만/i, /그러나/i, /반면/i, /우려/i, /리스크/i, /문제/i,
+    /어렵/i, /힘들/i, /반대/i, /다른 의견/i, /고려해야/i, /재검토/i,
+  ];
+  const agreePatterns = [
+    /동의/i, /좋은 의견/i, /찬성/i, /맞습니다/i, /그렇습니다/i,
+    /좋은 방향/i, /적절/i, /효과적/i,
+  ];
+  const supplementPatterns = [
+    /추가로/i, /더불어/i, /보완/i, /확장/i, /발전/i, /덧붙이/i,
+    /참고로/i, /또한/i,
+  ];
+
+  const disagreeCount = disagreePatterns.filter(p => p.test(content)).length;
+  const agreeCount = agreePatterns.filter(p => p.test(content)).length;
+  const supplementCount = supplementPatterns.filter(p => p.test(content)).length;
+
+  if (disagreeCount > agreeCount && disagreeCount > supplementCount) return 'disagree';
+  if (agreeCount > disagreeCount && agreeCount > supplementCount) return 'agree';
+  if (supplementCount > 0) return 'supplement';
+  return 'neutral';
+}
+
+// 발언에서 언급된 역할 감지
+function detectMentionedRoles(content: string): Role[] {
+  const mentioned: Role[] = [];
+  for (const [role, keywords] of Object.entries(ROLE_KEYWORDS)) {
+    if (keywords.some(keyword => content.includes(keyword))) {
+      mentioned.push(role as Role);
+    }
+  }
+  return mentioned;
+}
+
+// 동적 발언 순서 결정 (토론식)
+function determineNextSpeakers(
+  lastMessage: Message | null,
+  allMembers: TeamMember[],
+  spokenMembers: Set<string>,
+  roundParticipants: TeamMember[]
+): TeamMember[] {
+  const remainingMembers = roundParticipants.filter(m => !spokenMembers.has(m.id));
+
+  if (remainingMembers.length === 0) return [];
+  if (!lastMessage || lastMessage.memberId === 'system' || lastMessage.memberId === 'user') {
+    // 첫 발언 또는 시스템/사용자 메시지 후: 랜덤
+    return [remainingMembers[Math.floor(Math.random() * remainingMembers.length)]];
+  }
+
+  const opinionType = detectOpinionType(lastMessage.content);
+  const mentionedRoles = detectMentionedRoles(lastMessage.content);
+
+  // 반대 의견인 경우: 원래 발언자의 역할과 관련된 멤버 우선
+  if (opinionType === 'disagree') {
+    const relatedMembers = remainingMembers.filter(m =>
+      m.role === lastMessage.memberRole || mentionedRoles.includes(m.role)
+    );
+    if (relatedMembers.length > 0) {
+      return [relatedMembers[Math.floor(Math.random() * relatedMembers.length)]];
+    }
+  }
+
+  // 특정 역할이 언급된 경우: 해당 역할 우선
+  if (mentionedRoles.length > 0) {
+    const mentionedMembers = remainingMembers.filter(m => mentionedRoles.includes(m.role));
+    if (mentionedMembers.length > 0) {
+      return [mentionedMembers[Math.floor(Math.random() * mentionedMembers.length)]];
+    }
+  }
+
+  // 보완 의견인 경우: 다른 관점 제시를 위해 다른 역할 우선
+  if (opinionType === 'supplement') {
+    const differentRoleMembers = remainingMembers.filter(m => m.role !== lastMessage.memberRole);
+    if (differentRoleMembers.length > 0) {
+      return [differentRoleMembers[Math.floor(Math.random() * differentRoleMembers.length)]];
+    }
+  }
+
+  // 기본: 랜덤
+  return [remainingMembers[Math.floor(Math.random() * remainingMembers.length)]];
+}
+
 export default function ChatRoom({ sessionId, goal, members, onBack, initialMessages, initialOutput }: ChatRoomProps) {
   const [messages, setMessages] = useState<Message[]>(initialMessages || []);
   const [isTyping, setIsTyping] = useState<string | null>(null);
@@ -146,6 +245,7 @@ export default function ChatRoom({ sessionId, goal, members, onBack, initialMess
   const [currentDocVersion, setCurrentDocVersion] = useState(0);
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('team');
+  const [discussionStyle, setDiscussionStyle] = useState<DiscussionStyle>('debate'); // 기본: 토론식
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isInitializedRef = useRef(!!initialMessages && initialMessages.length > 0);
 
@@ -230,10 +330,16 @@ export default function ChatRoom({ sessionId, goal, members, onBack, initialMess
   }, [goal, messages]);
 
   // 피드백 콜백 ref (async함수에서 상태 접근용)
-  const feedbackResolveRef = useRef<((feedback: string | null) => void) | null>(null);
+  // 피드백 결과 타입
+  interface FeedbackResult {
+    feedback: string | null;
+    continueStage: boolean; // true: 같은 단계 계속, false: 다음 단계로
+  }
+
+  const feedbackResolveRef = useRef<((result: FeedbackResult) => void) | null>(null);
 
   // 피드백 대기 함수
-  const waitForFeedback = useCallback((): Promise<string | null> => {
+  const waitForFeedback = useCallback((): Promise<FeedbackResult> => {
     return new Promise((resolve) => {
       feedbackResolveRef.current = resolve;
       setFeedbackMode(true);
@@ -241,10 +347,10 @@ export default function ChatRoom({ sessionId, goal, members, onBack, initialMess
   }, []);
 
   // 피드백 제출 처리
-  const handleFeedbackSubmit = useCallback((feedback: string | null) => {
+  const handleFeedbackSubmit = useCallback((feedback: string | null, continueStage: boolean) => {
     setFeedbackMode(false);
     if (feedbackResolveRef.current) {
-      feedbackResolveRef.current(feedback);
+      feedbackResolveRef.current({ feedback, continueStage });
       feedbackResolveRef.current = null;
     }
   }, []);
@@ -253,43 +359,28 @@ export default function ChatRoom({ sessionId, goal, members, onBack, initialMess
   const executeRound = useCallback(async (
     roundIndex: number,
     currentMessages: Message[],
-    userFeedback?: string | null
+    showStartMessage: boolean = true
   ): Promise<Message[]> => {
     const round = AUTO_DISCUSSION_ROUNDS[roundIndex];
     setCurrentRound(roundIndex + 1);
     setMode(round.mode);
 
-    // 사용자 피드백이 있으면 먼저 추가
-    if (userFeedback) {
-      const feedbackMessage: Message = {
+    // 라운드 시작 시스템 메시지 (첫 시작일 때만)
+    if (showStartMessage) {
+      const systemMessage: Message = {
         id: uuidv4(),
-        memberId: 'user',
-        memberName: '나',
+        memberId: 'system',
+        memberName: '시스템',
         memberRole: 'planner',
         memberLevel: 'senior',
-        content: `[피드백] ${userFeedback}`,
+        content: `📍 ${COLLABORATION_MODES.find(m => m.id === round.mode)?.name} 단계를 시작합니다.`,
         timestamp: new Date(),
       };
-      setMessages(prev => [...prev, feedbackMessage]);
-      currentMessages = [...currentMessages, feedbackMessage];
+      setMessages(prev => [...prev, systemMessage]);
+      currentMessages = [...currentMessages, systemMessage];
       // DB에 저장
-      await saveMessageToDB(feedbackMessage);
+      await saveMessageToDB(systemMessage);
     }
-
-    // 라운드 시작 시스템 메시지
-    const systemMessage: Message = {
-      id: uuidv4(),
-      memberId: 'system',
-      memberName: '시스템',
-      memberRole: 'planner',
-      memberLevel: 'senior',
-      content: `📍 ${COLLABORATION_MODES.find(m => m.id === round.mode)?.name} 단계를 시작합니다.`,
-      timestamp: new Date(),
-    };
-    setMessages(prev => [...prev, systemMessage]);
-    currentMessages = [...currentMessages, systemMessage];
-    // DB에 저장
-    await saveMessageToDB(systemMessage);
 
     // 참여할 팀원 선택
     let participants: TeamMember[];
@@ -302,41 +393,90 @@ export default function ChatRoom({ sessionId, goal, members, onBack, initialMess
       participants = [...members].sort(() => Math.random() - 0.5).slice(0, Math.min(4, members.length));
     }
 
-    const topicWithFeedback = userFeedback
-      ? `${COLLABORATION_MODES.find(m => m.id === round.mode)?.topic || ''}\n\n사용자 피드백: ${userFeedback}`
-      : COLLABORATION_MODES.find(m => m.id === round.mode)?.topic || '';
+    const topic = COLLABORATION_MODES.find(m => m.id === round.mode)?.topic || '';
 
-    for (const member of participants) {
-      setIsTyping(member.id);
-      await new Promise(resolve => setTimeout(resolve, 500));
+    // 토론 스타일에 따른 발언 순서 결정
+    if (discussionStyle === 'sequential') {
+      // 순차 토론: 기존 방식 유지
+      for (const member of participants) {
+        setIsTyping(member.id);
+        await new Promise(resolve => setTimeout(resolve, 500));
 
-      try {
-        const response = await callGeminiAPI(member, topicWithFeedback, currentMessages);
+        try {
+          const response = await callGeminiAPI(member, topic, currentMessages);
 
-        const newMessage: Message = {
-          id: uuidv4(),
-          memberId: member.id,
-          memberName: member.name,
-          memberRole: member.role,
-          memberLevel: member.level,
-          content: response,
-          timestamp: new Date(),
-        };
+          const newMessage: Message = {
+            id: uuidv4(),
+            memberId: member.id,
+            memberName: member.name,
+            memberRole: member.role,
+            memberLevel: member.level,
+            content: response,
+            timestamp: new Date(),
+          };
 
-        setMessages(prev => [...prev, newMessage]);
-        currentMessages = [...currentMessages, newMessage];
-        // DB에 저장
-        await saveMessageToDB(newMessage);
-      } catch (error) {
-        console.error('응답 생성 실패:', error);
+          setMessages(prev => [...prev, newMessage]);
+          currentMessages = [...currentMessages, newMessage];
+          await saveMessageToDB(newMessage);
+        } catch (error) {
+          console.error('응답 생성 실패:', error);
+        }
+
+        setIsTyping(null);
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
+    } else {
+      // 자유 토론 (debate): 동적 순서 결정
+      const spokenMembers = new Set<string>();
+      let lastMessage: Message | null = currentMessages.length > 0
+        ? currentMessages[currentMessages.length - 1]
+        : null;
 
-      setIsTyping(null);
-      await new Promise(resolve => setTimeout(resolve, 200));
+      while (spokenMembers.size < participants.length) {
+        const nextSpeakers = determineNextSpeakers(lastMessage, members, spokenMembers, participants);
+
+        if (nextSpeakers.length === 0) break;
+
+        const member = nextSpeakers[0];
+        spokenMembers.add(member.id);
+
+        setIsTyping(member.id);
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        try {
+          // 토론식 프롬프트: 이전 발언에 대한 반응 유도
+          const debatePrompt = lastMessage && lastMessage.memberId !== 'system' && lastMessage.memberId !== 'user'
+            ? `${topic}\n\n💬 직전 발언 (${lastMessage.memberName}): "${lastMessage.content.slice(0, 200)}${lastMessage.content.length > 200 ? '...' : ''}"\n\n위 의견에 대해 동의/반대/보완 관점에서 당신의 전문 영역 의견을 제시해주세요.`
+            : topic;
+
+          const response = await callGeminiAPI(member, debatePrompt, currentMessages);
+
+          const newMessage: Message = {
+            id: uuidv4(),
+            memberId: member.id,
+            memberName: member.name,
+            memberRole: member.role,
+            memberLevel: member.level,
+            content: response,
+            timestamp: new Date(),
+          };
+
+          setMessages(prev => [...prev, newMessage]);
+          currentMessages = [...currentMessages, newMessage];
+          await saveMessageToDB(newMessage);
+
+          lastMessage = newMessage;
+        } catch (error) {
+          console.error('응답 생성 실패:', error);
+        }
+
+        setIsTyping(null);
+        await new Promise(resolve => setTimeout(resolve, 300)); // 토론식은 약간 더 긴 딜레이
+      }
     }
 
     return currentMessages;
-  }, [members, callGeminiAPI, saveMessageToDB]);
+  }, [members, callGeminiAPI, saveMessageToDB, discussionStyle]);
 
   // 자동 토론 시작
   const startAutoDiscussion = useCallback(async () => {
@@ -345,20 +485,77 @@ export default function ChatRoom({ sessionId, goal, members, onBack, initialMess
     setDiscussionComplete(false);
 
     let currentMessages: Message[] = [];
+    let roundIndex = 0;
+    let stageIteration = 1; // 같은 단계 몇 번째 반복인지
 
-    for (let roundIndex = 0; roundIndex < AUTO_DISCUSSION_ROUNDS.length; roundIndex++) {
-      // 첫 번째 라운드가 아니면 피드백 요청
-      if (roundIndex > 0) {
-        setPendingRound(roundIndex);
-        const feedback = await waitForFeedback();
-        setPendingRound(null);
-        currentMessages = await executeRound(roundIndex, currentMessages, feedback);
-      } else {
-        currentMessages = await executeRound(roundIndex, currentMessages);
-      }
+    while (roundIndex < AUTO_DISCUSSION_ROUNDS.length) {
+      // 라운드 실행
+      currentMessages = await executeRound(roundIndex, currentMessages);
 
       // 라운드 간 짧은 대기
       await new Promise(resolve => setTimeout(resolve, 500));
+
+      // 피드백 요청 (사용자가 계속/다음 선택)
+      setPendingRound(roundIndex);
+      const { feedback, continueStage } = await waitForFeedback();
+      setPendingRound(null);
+
+      if (continueStage) {
+        // 같은 단계 계속
+        stageIteration++;
+
+        // 피드백이 있으면 먼저 추가
+        if (feedback) {
+          const feedbackMessage: Message = {
+            id: uuidv4(),
+            memberId: 'user',
+            memberName: '나',
+            memberRole: 'planner',
+            memberLevel: 'senior',
+            content: `[피드백] ${feedback}`,
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, feedbackMessage]);
+          currentMessages = [...currentMessages, feedbackMessage];
+          await saveMessageToDB(feedbackMessage);
+        }
+
+        const continueMessage: Message = {
+          id: uuidv4(),
+          memberId: 'system',
+          memberName: '시스템',
+          memberRole: 'planner',
+          memberLevel: 'senior',
+          content: `🔄 ${COLLABORATION_MODES.find(m => m.id === AUTO_DISCUSSION_ROUNDS[roundIndex].mode)?.name} 단계를 계속합니다. (${stageIteration}차)`,
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, continueMessage]);
+        currentMessages = [...currentMessages, continueMessage];
+        await saveMessageToDB(continueMessage);
+
+        // 같은 단계 다시 실행 (시작 메시지 없이)
+        currentMessages = await executeRound(roundIndex, currentMessages, false);
+        await new Promise(resolve => setTimeout(resolve, 500));
+      } else {
+        // 다음 단계로
+        if (feedback) {
+          const feedbackMessage: Message = {
+            id: uuidv4(),
+            memberId: 'user',
+            memberName: '나',
+            memberRole: 'planner',
+            memberLevel: 'senior',
+            content: `[피드백] ${feedback}`,
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, feedbackMessage]);
+          currentMessages = [...currentMessages, feedbackMessage];
+          await saveMessageToDB(feedbackMessage);
+        }
+
+        roundIndex++;
+        stageIteration = 1;
+      }
     }
 
     // 토론 완료
@@ -671,6 +868,44 @@ export default function ChatRoom({ sessionId, goal, members, onBack, initialMess
           {/* 탭 콘텐츠 */}
           {sidebarTab === 'team' ? (
             <div className="flex-1 overflow-y-auto">
+              {/* 토론 스타일 선택 */}
+              <div className="p-4 border-b border-[var(--border-subtle)]">
+                <h3 className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider mb-3" style={{ fontFamily: 'var(--font-jetbrains)' }}>
+                  토론 스타일
+                </h3>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => !isAutoMode && setDiscussionStyle('sequential')}
+                    disabled={isAutoMode}
+                    className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all flex flex-col items-center gap-1 ${
+                      discussionStyle === 'sequential'
+                        ? 'bg-blue-500/20 border-2 border-blue-500/50 text-blue-400'
+                        : 'bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] hover:bg-[var(--bg-hover)] text-[var(--text-secondary)]'
+                    } ${isAutoMode ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    <span>📋</span>
+                    <span>순차</span>
+                  </button>
+                  <button
+                    onClick={() => !isAutoMode && setDiscussionStyle('debate')}
+                    disabled={isAutoMode}
+                    className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all flex flex-col items-center gap-1 ${
+                      discussionStyle === 'debate'
+                        ? 'bg-purple-500/20 border-2 border-purple-500/50 text-purple-400'
+                        : 'bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] hover:bg-[var(--bg-hover)] text-[var(--text-secondary)]'
+                    } ${isAutoMode ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    <span>🎯</span>
+                    <span>토론식</span>
+                  </button>
+                </div>
+                <p className="mt-2 text-[10px] text-[var(--text-muted)]">
+                  {discussionStyle === 'sequential'
+                    ? '팀원이 순서대로 발언합니다'
+                    : '반론/동의에 따라 동적으로 순서가 결정됩니다'}
+                </p>
+              </div>
+
               {/* 팀 구성 */}
               <div className="p-4 border-b border-[var(--border-subtle)]">
                 <h3 className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider mb-3" style={{ fontFamily: 'var(--font-jetbrains)' }}>
@@ -822,6 +1057,44 @@ export default function ChatRoom({ sessionId, goal, members, onBack, initialMess
         {/* 탭 콘텐츠 */}
         {sidebarTab === 'team' ? (
           <>
+            {/* 토론 스타일 선택 */}
+            <div className="p-4 border-b border-[var(--border-subtle)] shrink-0">
+              <h3 className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider mb-3" style={{ fontFamily: 'var(--font-jetbrains)' }}>
+                토론 스타일
+              </h3>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => !isAutoMode && setDiscussionStyle('sequential')}
+                  disabled={isAutoMode}
+                  className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all flex flex-col items-center gap-1 ${
+                    discussionStyle === 'sequential'
+                      ? 'bg-blue-500/20 border-2 border-blue-500/50 text-blue-400'
+                      : 'bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] hover:bg-[var(--bg-hover)] text-[var(--text-secondary)]'
+                  } ${isAutoMode ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <span>📋</span>
+                  <span>순차</span>
+                </button>
+                <button
+                  onClick={() => !isAutoMode && setDiscussionStyle('debate')}
+                  disabled={isAutoMode}
+                  className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all flex flex-col items-center gap-1 ${
+                    discussionStyle === 'debate'
+                      ? 'bg-purple-500/20 border-2 border-purple-500/50 text-purple-400'
+                      : 'bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] hover:bg-[var(--bg-hover)] text-[var(--text-secondary)]'
+                  } ${isAutoMode ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <span>🎯</span>
+                  <span>토론식</span>
+                </button>
+              </div>
+              <p className="mt-2 text-[10px] text-[var(--text-muted)]">
+                {discussionStyle === 'sequential'
+                  ? '팀원이 순서대로 발언합니다'
+                  : '반론/동의에 따라 동적으로 순서가 결정됩니다'}
+              </p>
+            </div>
+
             {/* 팀 구성 - 고정 높이 */}
             <div className="p-4 border-b border-[var(--border-subtle)] shrink-0">
               <h3 className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider mb-3" style={{ fontFamily: 'var(--font-jetbrains)' }}>
@@ -1128,37 +1401,63 @@ export default function ChatRoom({ sessionId, goal, members, onBack, initialMess
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-purple)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                 </svg>
-                피드백 요청
+                {COLLABORATION_MODES.find(m => m.id === AUTO_DISCUSSION_ROUNDS[pendingRound].mode)?.icon}{' '}
+                {COLLABORATION_MODES.find(m => m.id === AUTO_DISCUSSION_ROUNDS[pendingRound].mode)?.name} 완료
               </div>
               <p className="text-xs text-[var(--text-tertiary)] mt-1">
-                다음 단계({COLLABORATION_MODES.find(m => m.id === AUTO_DISCUSSION_ROUNDS[pendingRound].mode)?.name})에 반영할 피드백을 입력하세요.
+                이 단계를 계속하거나, 다음 단계로 넘어갈 수 있습니다. 피드백을 추가하면 다음 토론에 반영됩니다.
               </p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-3">
               <input
                 type="text"
                 value={userInput}
                 onChange={e => setUserInput(e.target.value)}
-                placeholder="예: 마케팅 관점도 고려해주세요..."
-                className="flex-1 bg-[var(--bg-tertiary)] border border-[var(--accent-purple)]/30 rounded-xl px-4 py-3 text-sm focus:border-[var(--accent-purple)]"
+                placeholder="피드백 (선택사항): 예) 보안 관점도 고려해주세요..."
+                className="w-full bg-[var(--bg-tertiary)] border border-[var(--accent-purple)]/30 rounded-xl px-4 py-3 text-sm focus:border-[var(--accent-purple)]"
                 style={{ fontFamily: 'var(--font-space)' }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleFeedbackSubmit(userInput.trim() || null);
-                    setUserInput('');
-                  }
-                }}
               />
-              <button
-                onClick={() => {
-                  handleFeedbackSubmit(userInput.trim() || null);
-                  setUserInput('');
-                }}
-                className="btn btn-primary"
-              >
-                {userInput.trim() ? '제출' : '건너뛰기'}
-              </button>
+              <div className="flex gap-2">
+                {/* 이 단계 계속 버튼 */}
+                <button
+                  onClick={() => {
+                    handleFeedbackSubmit(userInput.trim() || null, true);
+                    setUserInput('');
+                  }}
+                  className="flex-1 px-4 py-3 rounded-xl bg-purple-500/20 border border-purple-500/40 text-purple-400 hover:bg-purple-500/30 transition-colors font-medium text-sm flex items-center justify-center gap-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+                    <path d="M21 3v5h-5" />
+                  </svg>
+                  이 단계 계속
+                </button>
+                {/* 다음 단계로 버튼 */}
+                <button
+                  onClick={() => {
+                    handleFeedbackSubmit(userInput.trim() || null, false);
+                    setUserInput('');
+                  }}
+                  className="flex-1 px-4 py-3 rounded-xl bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/30 transition-colors font-medium text-sm flex items-center justify-center gap-2"
+                >
+                  {pendingRound < AUTO_DISCUSSION_ROUNDS.length - 1 ? (
+                    <>
+                      다음: {COLLABORATION_MODES.find(m => m.id === AUTO_DISCUSSION_ROUNDS[pendingRound + 1]?.mode)?.name}
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M5 12h14" />
+                        <path d="m12 5 7 7-7 7" />
+                      </svg>
+                    </>
+                  ) : (
+                    <>
+                      토론 완료
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20 6 9 17l-5-5" />
+                      </svg>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         )}
