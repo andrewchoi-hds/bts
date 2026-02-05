@@ -46,10 +46,20 @@ export async function POST(
     }
 
     if (type === 'message') {
+      // memberId가 'system', 'user' 또는 유효하지 않은 경우 null로 처리
+      let validMemberId: string | null = null;
+      if (data.memberId && data.memberId !== 'system' && data.memberId !== 'user') {
+        // 실제 TeamMember가 존재하는지 확인
+        const member = await prisma.teamMember.findFirst({
+          where: { sessionId: id, name: data.memberName },
+        });
+        validMemberId = member?.id || null;
+      }
+
       const message = await prisma.message.create({
         data: {
           sessionId: id,
-          memberId: data.memberId || null,
+          memberId: validMemberId,
           memberName: data.memberName || 'Unknown',
           memberRole: data.memberRole || 'user',
           memberLevel: data.memberLevel || 'junior',
