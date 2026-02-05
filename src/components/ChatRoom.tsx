@@ -273,7 +273,7 @@ export default function ChatRoom({ sessionId, goal, members, onBack, initialMess
       setMessages(prev => [...prev, feedbackMessage]);
       currentMessages = [...currentMessages, feedbackMessage];
       // DB에 저장
-      saveMessageToDB(feedbackMessage);
+      await saveMessageToDB(feedbackMessage);
     }
 
     // 라운드 시작 시스템 메시지
@@ -289,7 +289,7 @@ export default function ChatRoom({ sessionId, goal, members, onBack, initialMess
     setMessages(prev => [...prev, systemMessage]);
     currentMessages = [...currentMessages, systemMessage];
     // DB에 저장
-    saveMessageToDB(systemMessage);
+    await saveMessageToDB(systemMessage);
 
     // 참여할 팀원 선택
     let participants: TeamMember[];
@@ -326,7 +326,7 @@ export default function ChatRoom({ sessionId, goal, members, onBack, initialMess
         setMessages(prev => [...prev, newMessage]);
         currentMessages = [...currentMessages, newMessage];
         // DB에 저장
-        saveMessageToDB(newMessage);
+        await saveMessageToDB(newMessage);
       } catch (error) {
         console.error('응답 생성 실패:', error);
       }
@@ -378,7 +378,7 @@ export default function ChatRoom({ sessionId, goal, members, onBack, initialMess
     };
     setMessages(prev => [...prev, completeMessage]);
     // DB에 저장
-    saveMessageToDB(completeMessage);
+    await saveMessageToDB(completeMessage);
 
   }, [members, isAutoMode, executeRound, waitForFeedback, saveMessageToDB]);
 
@@ -410,7 +410,7 @@ export default function ChatRoom({ sessionId, goal, members, onBack, initialMess
     };
     setMessages(prev => [...prev, userMessage]);
     // DB에 저장
-    saveMessageToDB(userMessage);
+    await saveMessageToDB(userMessage);
     const currentInput = userInput;
     setUserInput('');
 
@@ -438,7 +438,7 @@ export default function ChatRoom({ sessionId, goal, members, onBack, initialMess
 
         setMessages(prev => [...prev, newMessage]);
         // DB에 저장
-        saveMessageToDB(newMessage);
+        await saveMessageToDB(newMessage);
       } catch (error) {
         console.error('응답 생성 실패:', error);
       }
