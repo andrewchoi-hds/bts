@@ -261,12 +261,12 @@ export default function UsageChart({ data }: UsageChartProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 프로바이더별 사용량 */}
-        <div className="p-6 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+        <div className="p-4 sm:p-6 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
+          <h3 className="text-base sm:text-lg font-semibold mb-4 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-purple-400" />
             프로바이더별 사용량
           </h3>
-          <div className="h-64">
+          <div className="h-48 sm:h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -275,11 +275,9 @@ export default function UsageChart({ data }: UsageChartProps) {
                   nameKey="name"
                   cx="50%"
                   cy="50%"
-                  innerRadius={50}
-                  outerRadius={75}
+                  innerRadius={40}
+                  outerRadius={65}
                   paddingAngle={4}
-                  label={({ name, percent }) => `${name} (${((percent ?? 0) * 100).toFixed(0)}%)`}
-                  labelLine={{ stroke: '#6b7280', strokeWidth: 1 }}
                 >
                   {data.byProvider.map((entry, index) => (
                     <Cell
@@ -299,33 +297,33 @@ export default function UsageChart({ data }: UsageChartProps) {
             </ResponsiveContainer>
           </div>
           {/* 범례 */}
-          <div className="flex justify-center gap-6 mt-4">
+          <div className="flex flex-wrap justify-center gap-4 sm:gap-6 mt-4">
             {data.byProvider.map((entry, index) => (
               <div key={entry.name} className="flex items-center gap-2">
                 <span
-                  className="w-3 h-3 rounded-full"
+                  className="w-3 h-3 rounded-full shrink-0"
                   style={{ backgroundColor: PROVIDER_COLORS[entry.name.toLowerCase()] || COLORS[index % COLORS.length] }}
                 />
-                <span className="text-sm text-[var(--text-muted)]">{entry.name}</span>
+                <span className="text-xs sm:text-sm text-[var(--text-muted)]">{entry.name}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* 엔드포인트별 요청 수 */}
-        <div className="p-6 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+        <div className="p-4 sm:p-6 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
+          <h3 className="text-base sm:text-lg font-semibold mb-4 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-amber-400" />
-            엔드포인트별 요청 수
+            엔드포인트별 요청
           </h3>
-          <div className="h-64">
+          <div className="h-48 sm:h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data.byEndpoint} layout="vertical" barCategoryGap="20%">
+              <BarChart data={data.byEndpoint} layout="vertical" barCategoryGap="20%" margin={{ left: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#2d2d44" horizontal={false} />
                 <XAxis
                   type="number"
                   stroke="#6b7280"
-                  fontSize={12}
+                  fontSize={10}
                   tickLine={false}
                   axisLine={false}
                 />
@@ -333,8 +331,8 @@ export default function UsageChart({ data }: UsageChartProps) {
                   type="category"
                   dataKey="name"
                   stroke="#6b7280"
-                  fontSize={12}
-                  width={70}
+                  fontSize={10}
+                  width={55}
                   tickLine={false}
                   axisLine={false}
                 />

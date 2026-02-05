@@ -685,36 +685,36 @@ description: 분석가 에이전트 - 데이터 분석, KPI 설계, 인사이트
                 <div
                   key={session.id}
                   onClick={() => handleSelectSession(session)}
-                  className="p-5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] hover:border-[var(--accent-purple)]/50 transition-all cursor-pointer group"
+                  className="p-4 sm:p-5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] hover:border-[var(--accent-purple)]/50 transition-all cursor-pointer group"
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-purple)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-3 sm:gap-4 min-w-0 flex-1">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-purple)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="sm:w-6 sm:h-6">
                           <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
                           <polyline points="14 2 14 8 20 8" />
                         </svg>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-lg truncate group-hover:text-[var(--accent-purple)] transition-colors">
+                        <h3 className="font-semibold text-base sm:text-lg truncate group-hover:text-[var(--accent-purple)] transition-colors">
                           {session.goal}
                         </h3>
-                        <div className="flex items-center gap-4 mt-2">
-                          <span className="flex items-center gap-1.5 text-sm text-[var(--text-tertiary)]">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2">
+                          <span className="flex items-center gap-1 text-xs sm:text-sm text-[var(--text-tertiary)]">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
                             </svg>
                             v{latestVersion?.version || 1}
                           </span>
-                          <span className="flex items-center gap-1.5 text-sm text-[var(--text-tertiary)]">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <span className="flex items-center gap-1 text-xs sm:text-sm text-[var(--text-tertiary)]">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <circle cx="12" cy="12" r="10" />
                               <polyline points="12 6 12 12 16 14" />
                             </svg>
                             {session.documentVersions?.length || 0}개 버전
                           </span>
-                          <span className="flex items-center gap-1.5 text-sm text-[var(--text-tertiary)]">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <span className="flex items-center gap-1 text-xs sm:text-sm text-[var(--text-tertiary)]">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
                               <circle cx="9" cy="7" r="4" />
                             </svg>
@@ -733,7 +733,7 @@ description: 분석가 에이전트 - 데이터 분석, KPI 설계, 인사이트
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0">
                       <button
                         onClick={async (e) => {
                           e.stopPropagation();
