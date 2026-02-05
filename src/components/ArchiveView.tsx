@@ -484,8 +484,8 @@ description: 분석가 에이전트 - 데이터 분석, KPI 설계, 인사이트
                   <path d="m15 18-6-6 6-6" />
                 </svg>
               </button>
-              <div>
-                <h3 className="font-semibold text-lg">{selectedSession.goal}</h3>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-semibold text-base sm:text-lg truncate">{selectedSession.goal}</h3>
                 <div className="flex items-center gap-3 mt-1">
                   <span className="text-sm text-[var(--text-tertiary)]">
                     버전 {selectedVersion.version}

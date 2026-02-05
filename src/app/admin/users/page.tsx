@@ -126,13 +126,13 @@ export default function AdminUsersPage() {
   };
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-2xl font-bold">사용자 관리</h1>
-          <p className="text-sm text-[var(--text-muted)] mt-1">
-            전체 사용자 목록을 확인하고 관리하세요
+          <h1 className="text-xl sm:text-2xl font-bold">사용자 관리</h1>
+          <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-1">
+            사용자 목록 및 권한 관리
           </p>
         </div>
 
@@ -160,22 +160,22 @@ export default function AdminUsersPage() {
 
       {/* Summary Cards */}
       {data?.summary && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-          <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
-            <p className="text-2xl font-bold">{data.summary.totalUsers}</p>
-            <p className="text-sm text-[var(--text-muted)]">전체 사용자</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-6">
+          <div className="p-3 sm:p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
+            <p className="text-xl sm:text-2xl font-bold">{data.summary.totalUsers}</p>
+            <p className="text-xs sm:text-sm text-[var(--text-muted)]">전체</p>
           </div>
-          <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-green-500/20">
-            <p className="text-2xl font-bold text-green-500">{data.summary.activeUsers}</p>
-            <p className="text-sm text-[var(--text-muted)]">활성화된 사용자</p>
+          <div className="p-3 sm:p-4 rounded-xl bg-[var(--bg-secondary)] border border-green-500/20">
+            <p className="text-xl sm:text-2xl font-bold text-green-500">{data.summary.activeUsers}</p>
+            <p className="text-xs sm:text-sm text-[var(--text-muted)]">활성</p>
           </div>
-          <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-red-500/20">
-            <p className="text-2xl font-bold text-red-400">{data.summary.inactiveUsers}</p>
-            <p className="text-sm text-[var(--text-muted)]">비활성화된 사용자</p>
+          <div className="p-3 sm:p-4 rounded-xl bg-[var(--bg-secondary)] border border-red-500/20">
+            <p className="text-xl sm:text-2xl font-bold text-red-400">{data.summary.inactiveUsers}</p>
+            <p className="text-xs sm:text-sm text-[var(--text-muted)]">비활성</p>
           </div>
-          <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-cyan-500/20">
-            <p className="text-2xl font-bold text-cyan-400">{data.summary.recentlyActive}</p>
-            <p className="text-sm text-[var(--text-muted)]">최근 {period}일 활동</p>
+          <div className="p-3 sm:p-4 rounded-xl bg-[var(--bg-secondary)] border border-cyan-500/20">
+            <p className="text-xl sm:text-2xl font-bold text-cyan-400">{data.summary.recentlyActive}</p>
+            <p className="text-xs sm:text-sm text-[var(--text-muted)]">{period}일 활동</p>
           </div>
         </div>
       )}

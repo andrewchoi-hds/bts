@@ -163,46 +163,46 @@ export default function StatsOverview({ stats }: StatsOverviewProps) {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* 첫 번째 행: 주요 통계 (PPT 스타일 - 큰 카드) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
         {primaryCards.map((card, index) => (
           <div
             key={index}
-            className={`p-6 rounded-xl bg-[var(--bg-secondary)] border-2 ${card.borderColor} hover:shadow-lg transition-all`}
+            className={`p-3 sm:p-6 rounded-xl bg-[var(--bg-secondary)] border-2 ${card.borderColor} hover:shadow-lg transition-all`}
           >
-            <div className="flex items-center gap-3 mb-3">
-              <div className={`p-2.5 rounded-lg ${card.bgColor}`}>
-                <div className={card.iconColor}>
+            <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+              <div className={`p-1.5 sm:p-2.5 rounded-lg ${card.bgColor} shrink-0`}>
+                <div className={`${card.iconColor} [&>svg]:w-4 [&>svg]:h-4 sm:[&>svg]:w-6 sm:[&>svg]:h-6`}>
                   {card.icon}
                 </div>
               </div>
-              <span className="text-sm text-[var(--text-muted)] font-medium">{card.label}</span>
+              <span className="text-[10px] sm:text-sm text-[var(--text-muted)] font-medium leading-tight">{card.label}</span>
             </div>
-            <p className="text-4xl font-bold tracking-tight">{card.value}</p>
+            <p className="text-2xl sm:text-4xl font-bold tracking-tight">{card.value}</p>
           </div>
         ))}
       </div>
 
       {/* 두 번째 행: API/시스템 통계 */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
         {secondaryCards.map((card, index) => (
           <div
             key={index}
-            className={`p-4 rounded-xl bg-[var(--bg-secondary)] border ${card.borderColor} hover:border-[var(--border-default)] transition-all`}
+            className={`p-3 sm:p-4 rounded-xl bg-[var(--bg-secondary)] border ${card.borderColor} hover:border-[var(--border-default)] transition-all`}
           >
-            <div className="flex items-start justify-between mb-3">
-              <div className={`p-2 rounded-lg ${card.bgColor}`}>
-                <div className={card.iconColor}>
+            <div className="flex items-start justify-between mb-2 sm:mb-3">
+              <div className={`p-1.5 sm:p-2 rounded-lg ${card.bgColor}`}>
+                <div className={`${card.iconColor} [&>svg]:w-4 [&>svg]:h-4 sm:[&>svg]:w-5 sm:[&>svg]:h-5`}>
                   {card.icon}
                 </div>
               </div>
             </div>
             <div>
-              <p className="text-2xl font-bold tracking-tight">{card.value}</p>
-              <p className="text-xs text-[var(--text-muted)] mt-1">{card.label}</p>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight">{card.value}</p>
+              <p className="text-[10px] sm:text-xs text-[var(--text-muted)] mt-1 leading-tight">{card.label}</p>
               {card.subValue && (
-                <p className="text-xs text-[var(--accent-cyan)] mt-1 font-medium">{card.subValue}</p>
+                <p className="text-[10px] sm:text-xs text-[var(--accent-cyan)] mt-1 font-medium">{card.subValue}</p>
               )}
             </div>
           </div>

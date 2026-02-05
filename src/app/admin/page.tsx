@@ -53,13 +53,13 @@ export default function AdminDashboard() {
   }, [period]);
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-2xl font-bold">관리자 대시보드</h1>
-          <p className="text-sm text-[var(--text-muted)] mt-1">
-            API 사용량 및 사용자 현황을 확인하세요
+          <h1 className="text-xl sm:text-2xl font-bold">대시보드</h1>
+          <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-1">
+            API 사용량 및 사용자 현황
           </p>
         </div>
 

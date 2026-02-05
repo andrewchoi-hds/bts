@@ -34,7 +34,7 @@ export default function AdminNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="w-64 h-full bg-[var(--bg-secondary)] border-r border-[var(--border-subtle)] flex flex-col shrink-0">
+    <nav className="hidden md:flex w-56 lg:w-64 h-full bg-[var(--bg-secondary)] border-r border-[var(--border-subtle)] flex-col shrink-0">
       {/* Header */}
       <div className="p-6 border-b border-[var(--border-subtle)]">
         <div className="flex items-center gap-3">
